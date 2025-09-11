@@ -772,8 +772,6 @@ Partial Class FormMain
     Friend WithEvents B_Angle_4 As Button
     Friend WithEvents B_Angle_3 As Button
     Friend WithEvents B_Angle_2 As Button
-    Friend WithEvents B_Y_0 As Button
-    Friend WithEvents B_X_0 As Button
     Friend WithEvents TimerCyclic As Timer
     Friend WithEvents B_POS_SET As Button
     Friend WithEvents B_POS_DEFAULT As Button
