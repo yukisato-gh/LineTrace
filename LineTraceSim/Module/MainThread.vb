@@ -101,10 +101,10 @@ Module MainThread
             Dim offset_x As Integer = 0
             Dim offset_y As Integer = 0
             Dim course_info As Bitmap = GetCourseInfo(offset_x, offset_y)
-            Dim start_x As Integer = GetSensorPosX(ch)
-            Dim end_x As Integer = start_x + SENSOR_SIZE_X - 1
-            Dim start_y As Integer = GetSensorPosY(ch)
-            Dim end_y As Integer = start_y + SENSOR_SIZE_Y - 1
+            Dim start_x As Integer = sensor_pos(ch, SensorPosIndex.START_X)
+            Dim end_x As Integer = sensor_pos(ch, SensorPosIndex.END_X)
+            Dim start_y As Integer = sensor_pos(ch, SensorPosIndex.START_Y)
+            Dim end_y As Integer = sensor_pos(ch, SensorPosIndex.END_Y)
             Dim rad As Double = pos_info.angle / 180 * Math.PI
 
             For x As Integer = start_x To end_x

@@ -1,6 +1,25 @@
 ﻿Imports System.Runtime.CompilerServices
 
 Public Module LineTraceSim
+    'センサ位置
+    Public Enum SensorPosIndex
+        START_X = 0
+        END_X
+        START_Y
+        END_Y
+    End Enum
+
+    Public sensor_pos(,) As Integer = {
+        {-38, -33, -24, -19},   'CH0
+        {-38, -33, -18, -13},   'CH1
+        {-38, -33, -12, -7},    'CH2
+        {-38, -33, -6, -1},     'CH3
+        {-38, -33, 0, 5},       'Ch4
+        {-38, -33, 6, 11},      'CH5
+        {-38, -33, 12, 17},     'CH6
+        {-38, -33, 18, 23}      'CH7
+    }
+
     Public Const CH0 As Byte = &H1
     Public Const CH1 As Byte = &H2
     Public Const CH2 As Byte = &H4
@@ -23,12 +42,6 @@ Public Module LineTraceSim
     Public Const CAR_CENTER_X As Double = CAR_SIZE_X / 2.0
     Public Const CAR_CENTER_Y As Double = CAR_SIZE_Y / 2.0
 
-    Public Const SENSOR_SIZE_X As Integer = 6
-    Public Const SENSOR_SIZE_Y As Integer = 6
-
-    Public Const SENSOR_CH0_POS_X As Integer = 22 - CAR_CENTER_X
-    Public Const SENSOR_CH0_POS_Y As Integer = 24 - CAR_CENTER_Y
-
     Public Const DEFAULT_SPEED As Double = 10.0
     Public Const DEFAULT_ROTATE_SPEED As Double = 90
 
@@ -37,6 +50,14 @@ Public Module LineTraceSim
         Dim x As Double
         Dim y As Double
         Dim angle As Double
+    End Structure
+
+    'センサ位置
+    Public Structure SensorPos
+        Dim start_x As Integer
+        Dim end_x As Integer
+        Dim start_y As Integer
+        Dim end_y As Integer
     End Structure
 
     '排他制御
@@ -202,12 +223,4 @@ Public Module LineTraceSim
             is_moving = value
         End SyncLock
     End Sub
-
-    Public Function GetSensorPosX(ByVal ch As Integer) As Integer
-        GetSensorPosX = SENSOR_CH0_POS_X
-    End Function
-
-    Public Function GetSensorPosY(ByVal ch As Integer) As Integer
-        GetSensorPosY = SENSOR_CH0_POS_Y + (ch * SENSOR_SIZE_Y)
-    End Function
 End Module

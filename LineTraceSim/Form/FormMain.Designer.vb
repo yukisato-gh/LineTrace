@@ -110,7 +110,7 @@ Partial Class FormMain
         ' 
         PB_Car.BackColor = Color.White
         PB_Car.Image = CType(resources.GetObject("PB_Car.Image"), Image)
-        PB_Car.Location = New Point(360, 132)
+        PB_Car.Location = New Point(360, 130)
         PB_Car.Name = "PB_Car"
         PB_Car.Size = New Size(120, 120)
         PB_Car.SizeMode = PictureBoxSizeMode.CenterImage
