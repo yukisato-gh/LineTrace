@@ -114,7 +114,7 @@ Module MainThread
                     rotate_x += pos_info.x
                     rotate_x = Math.Max(rotate_x, 0)
                     rotate_x = Math.Min(rotate_x, COURSE_SIZE_X - 1)
-                    Dim rotate_y As Integer = CInt(y * Math.Cos(rad) + x * Math.Sin(rad))
+                    Dim rotate_y As Integer = CInt(x * Math.Sin(rad) + y * Math.Cos(rad))
                     rotate_y += pos_info.y
                     rotate_y = Math.Max(rotate_y, 0)
                     rotate_y = Math.Min(rotate_y, COURSE_SIZE_Y - 1)
