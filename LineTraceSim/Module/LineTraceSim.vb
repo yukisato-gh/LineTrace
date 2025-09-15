@@ -1,4 +1,4 @@
-﻿Imports System.Runtime.CompilerServices
+﻿Imports System.IO.MemoryMappedFiles
 
 Public Module LineTraceSim
     'センサ位置
@@ -66,6 +66,9 @@ Public Module LineTraceSim
     'アプリケーション生存
     Private alive As Boolean = True
 
+    'オンラインモード
+    Private online As Boolean = False
+
     'Dpi X
     Private dpi_x As Integer
 
@@ -105,6 +108,31 @@ Public Module LineTraceSim
     'コース位置によるオフセットY
     Private offset_y As Integer = 0
 
+    '共有メモリ(センサ値)のアクセッサ
+    Private sensor_accessor As MemoryMappedViewAccessor
+
+    '共有メモリ(PWM)のアクセッサ
+    Private pwm_accessor As MemoryMappedViewAccessor
+
+    Public Function Initialize() As Boolean
+        Initialize = False
+
+        Try
+            '共有メモリ(センサ値)の初期化
+            Dim sensor_mmf As MemoryMappedFile = MemoryMappedFile.CreateOrOpen("Sensor", 1)
+            sensor_accessor = sensor_mmf.CreateViewAccessor()
+            sensor_accessor.Write(0, 0)
+
+            '共有メモリ(PWM)の初期化
+            Dim pwm_mmf As MemoryMappedFile = MemoryMappedFile.CreateOrOpen("Pwm", 1)
+            pwm_accessor = pwm_mmf.CreateViewAccessor()
+
+            Initialize = True
+
+        Catch ex As Exception
+        End Try
+    End Function
+
     Public Sub SetAlive(ByVal value As Boolean)
         SyncLock lock
             alive = value
@@ -114,6 +142,18 @@ Public Module LineTraceSim
     Public Function IsAlive() As Boolean
         SyncLock lock
             IsAlive = alive
+        End SyncLock
+    End Function
+
+    Public Sub SetOnline(ByVal value As Boolean)
+        SyncLock lock
+            online = value
+        End SyncLock
+    End Sub
+
+    Public Function IsOnline() As Boolean
+        SyncLock lock
+            IsOnline = online
         End SyncLock
     End Function
 
@@ -136,6 +176,12 @@ Public Module LineTraceSim
     Public Sub SetSensorValue(ByVal value As Byte)
         SyncLock lock
             sensor_value = value
+
+            Try
+                '共有メモリにも書き込み
+                sensor_accessor.Write(0, value)
+            Catch ex As Exception
+            End Try
         End SyncLock
     End Sub
 
@@ -148,11 +194,23 @@ Public Module LineTraceSim
     Public Sub SetPwmValue(ByVal value As Byte)
         SyncLock lock
             pwm_value = value
+
+            Try
+                '共有メモリにも書き込み
+                pwm_accessor.Write(0, value)
+            Catch ex As Exception
+            End Try
         End SyncLock
     End Sub
 
     Public Function GetPwmValue() As Byte
         SyncLock lock
+            Try
+                '共有メモリから読み込み
+                pwm_accessor.Read(Of Byte)(0, pwm_value)
+            Catch ex As Exception
+            End Try
+
             GetPwmValue = pwm_value
         End SyncLock
     End Function

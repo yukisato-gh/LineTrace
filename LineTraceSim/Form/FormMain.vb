@@ -6,6 +6,9 @@ Public Class FormMain
     Private Const TEXT_ON As String = "●"
     Private Const TEXT_OFF As String = "〇"
 
+    Private Const TEXT_ONLINE As String = "＝Online"
+    Private Const TEXT_OFFLINE As String = "≠Offline"
+
     'センサ
     Private Const SENSOR_NUM As Integer = 8
     Private m_sensor(SENSOR_NUM - 1) As Label
@@ -16,6 +19,13 @@ Public Class FormMain
     Private m_car_start_pos As Point
 
     Private Sub FormMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        '初期化
+        If LineTraceSim.Initialize() = False Then
+            MsgBox("初期化に失敗しました。終了します。")
+            End
+        End If
+
+        'コントロール初期化
         InitControl()
 
         'デフォルトの位置を設定
@@ -361,5 +371,20 @@ Public Class FormMain
         SetPosInfo(pos_info)
 
         m_is_car_drag = False
+    End Sub
+
+    Private Sub OnlineToolStripMenuItem_1_Click(sender As Object, e As EventArgs) Handles OnlineToolStripMenuItem_1.Click
+        'オンライン状態をトグル
+        Dim online As Boolean = Not IsOnline()
+        SetOnline(online)
+
+        '表示更新
+        If online Then
+            OnlineToolStripMenuItem_0.Text = TEXT_ONLINE
+            OnlineToolStripMenuItem_1.Text = TEXT_OFFLINE
+        Else
+            OnlineToolStripMenuItem_0.Text = TEXT_OFFLINE
+            OnlineToolStripMenuItem_1.Text = TEXT_ONLINE
+        End If
     End Sub
 End Class

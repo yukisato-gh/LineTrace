@@ -85,6 +85,8 @@ Partial Class FormMain
         FileToolStripMenuItem = New ToolStripMenuItem()
         SelectCourseToolStripMenuItem = New ToolStripMenuItem()
         SelectCarToolStripMenuItem = New ToolStripMenuItem()
+        OnlineToolStripMenuItem_0 = New ToolStripMenuItem()
+        OnlineToolStripMenuItem_1 = New ToolStripMenuItem()
         CType(PB_Course, ComponentModel.ISupportInitialize).BeginInit()
         CType(PB_Car, ComponentModel.ISupportInitialize).BeginInit()
         GroupBox1.SuspendLayout()
@@ -723,10 +725,11 @@ Partial Class FormMain
         ' MenuStrip1
         ' 
         MenuStrip1.ImageScalingSize = New Size(24, 24)
-        MenuStrip1.Items.AddRange(New ToolStripItem() {FileToolStripMenuItem})
+        MenuStrip1.Items.AddRange(New ToolStripItem() {FileToolStripMenuItem, OnlineToolStripMenuItem_0})
         MenuStrip1.Location = New Point(0, 0)
         MenuStrip1.Name = "MenuStrip1"
-        MenuStrip1.Size = New Size(1228, 33)
+        MenuStrip1.Padding = New Padding(4, 1, 0, 1)
+        MenuStrip1.Size = New Size(1094, 24)
         MenuStrip1.TabIndex = 7
         MenuStrip1.Text = "MenuStrip1"
         ' 
@@ -748,6 +751,19 @@ Partial Class FormMain
         SelectCarToolStripMenuItem.Name = "SelectCarToolStripMenuItem"
         SelectCarToolStripMenuItem.Size = New Size(144, 22)
         SelectCarToolStripMenuItem.Text = "Select Car"
+        ' 
+        ' OnlineToolStripMenuItem_0
+        ' 
+        OnlineToolStripMenuItem_0.DropDownItems.AddRange(New ToolStripItem() {OnlineToolStripMenuItem_1})
+        OnlineToolStripMenuItem_0.Name = "OnlineToolStripMenuItem_0"
+        OnlineToolStripMenuItem_0.Size = New Size(66, 22)
+        OnlineToolStripMenuItem_0.Text = "≠Offline"
+        ' 
+        ' OnlineToolStripMenuItem_1
+        ' 
+        OnlineToolStripMenuItem_1.Name = "OnlineToolStripMenuItem_1"
+        OnlineToolStripMenuItem_1.Size = New Size(121, 22)
+        OnlineToolStripMenuItem_1.Text = "＝Online"
         ' 
         ' FormMain
         ' 
@@ -845,5 +861,7 @@ Partial Class FormMain
     Friend WithEvents FileToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents SelectCourseToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents SelectCarToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents OnlineToolStripMenuItem_0 As ToolStripMenuItem
+    Friend WithEvents OnlineToolStripMenuItem_1 As ToolStripMenuItem
 
 End Class

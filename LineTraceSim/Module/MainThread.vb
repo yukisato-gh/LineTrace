@@ -17,8 +17,10 @@ Module MainThread
                 'センサをシミュレーション
                 SimulateSensor()
 
-                'PWM制御
-                AlgorithmOffline()
+                If IsOnline() = False Then
+                    'PWM制御
+                    AlgorithmOffline()
+                End If
             End If
 
             Thread.Sleep(1)
@@ -60,6 +62,10 @@ Module MainThread
         ElseIf (pwm = PWM_R) Then
             '－回転
             after_pos.angle = (after_pos.angle - (rotate_speed * sec)) Mod 360
+        Else
+            '停止
+            sw.Restart()
+            Exit Sub
         End If
         If after_pos.angle < 0 Then
             after_pos.angle += 360
