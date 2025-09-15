@@ -25,10 +25,21 @@ Public Class FormMain
         pos_info.angle = 0
         SetDefaultPosInfo(pos_info)
 
+        'DPI情報を取得
+        Dim g As Graphics = CreateGraphics()
+        Dim dpi_x As Integer = g.DpiX
+        Dim dpi_y As Integer = g.DpiY
+        SetDpiX(dpi_x)
+        SetDpiY(dpi_y)
+
         'デフォルトのコース情報を設定
+        Dim course As Bitmap = PB_Course.Image
+        course.SetResolution(dpi_x, dpi_y)
         SetCourseInfo(PB_Course.Image, PB_Course.Location.X, PB_Course.Location.Y)
 
         'デフォルトのカー情報を設定
+        Dim car As Bitmap = PB_Car.Image
+        car.SetResolution(dpi_x, dpi_y)
         SetCarInfo(PB_Car.Image)
 
         'メインループを開始
@@ -285,6 +296,7 @@ Public Class FormMain
             End If
 
             Dim course = New Bitmap(.FileName)
+            course.SetResolution(GetDpiX(), GetDpiY())
             PB_Course.Image = course
             SetCourseInfo(course, PB_Course.Location.X, PB_Course.Location.Y)
         End With
@@ -301,6 +313,7 @@ Public Class FormMain
             End If
 
             Dim car = New Bitmap(.FileName)
+            car.SetResolution(GetDpiX(), GetDpiY())
             PB_Car.Image = car
             SetCarInfo(car)
         End With

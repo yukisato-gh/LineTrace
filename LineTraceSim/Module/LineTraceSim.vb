@@ -66,6 +66,12 @@ Public Module LineTraceSim
     'アプリケーション生存
     Private alive As Boolean = True
 
+    'Dpi X
+    Private dpi_x As Integer
+
+    'Dpi Y
+    Private dpi_y As Integer
+
     'センサ値
     Private sensor_value As Byte = 0
 
@@ -109,6 +115,22 @@ Public Module LineTraceSim
         SyncLock lock
             IsAlive = alive
         End SyncLock
+    End Function
+
+    Public Sub SetDpiX(ByVal value As Integer)
+        dpi_x = value
+    End Sub
+
+    Public Function GetDpiX() As Integer
+        GetDpiX = dpi_x
+    End Function
+
+    Public Sub SetDpiY(ByVal value As Integer)
+        dpi_y = value
+    End Sub
+
+    Public Function GetDpiY() As Integer
+        GetDpiY = dpi_y
     End Function
 
     Public Sub SetSensorValue(ByVal value As Byte)
