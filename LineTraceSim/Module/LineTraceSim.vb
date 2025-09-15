@@ -42,8 +42,8 @@ Public Module LineTraceSim
     Public Const CAR_CENTER_X As Double = CAR_SIZE_X / 2.0
     Public Const CAR_CENTER_Y As Double = CAR_SIZE_Y / 2.0
 
-    Public Const DEFAULT_SPEED As Double = 10.0
-    Public Const DEFAULT_ROTATE_SPEED As Double = 90
+    Public Const DEFAULT_SPEED As Double = 100.0
+    Public Const DEFAULT_ROTATE_SPEED As Double = 90.0
 
     '位置情報
     Public Structure PosInfo

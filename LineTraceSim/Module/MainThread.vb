@@ -23,7 +23,7 @@ Module MainThread
                 End If
             End If
 
-            Thread.Sleep(1)
+            Thread.Sleep(10)
         End While
     End Sub
 
