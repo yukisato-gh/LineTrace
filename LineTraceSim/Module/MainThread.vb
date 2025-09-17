@@ -110,8 +110,10 @@ Module MainThread
         ' --- 4. 速度と角速度の更新 ---
         currentSpeed += acceleration * elapsedSec
         currentSpeed = Math.Max(0, currentSpeed) ' 速度は負にならない
+        SetSpeed(currentSpeed)
 
         currentAngularVelocity += angularAcceleration * elapsedSec
+        SetRotateSpeed(Math.Abs(currentAngularVelocity))
 
         ' --- 5. 位置と角度の更新 ---
         Dim after_pos As PosInfo = before_pos
@@ -142,12 +144,20 @@ Module MainThread
         Static ch_table() As Byte = {CH0, CH1, CH2, CH3, CH4, CH5, CH6, CH7}
         Dim pos_info As PosInfo = GetPosInfo()
         Dim sensor As Byte = 0
+        Dim ok As Boolean = False
 
         For i = 0 To CHMAX
             If IsSensorOn(i, pos_info) Then
                 sensor += ch_table(i)
+                If i = 3 Or i = 4 Then
+                    'CH3かCH4がONならOKとする
+                    ok = True
+                End If
             End If
         Next
+
+        'スコアを設定
+        SetScore(ok)
 
         SetSensorValue(sensor)
     End Sub

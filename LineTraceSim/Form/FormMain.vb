@@ -90,6 +90,9 @@ Public Class FormMain
             '現在位置を反映
             DispPos()
 
+            'スコアを更新
+            DispScore()
+
         Catch ex As Exception
 
         Finally
@@ -179,6 +182,18 @@ Public Class FormMain
         RotateBitmap = ret
     End Function
 
+    'スコアを更新
+    Private Sub DispScore()
+        '速度
+        L_Score_Speed.Text = GetSpeed().ToString("0.0")
+
+        '角速度
+        L_Score_Rotate.Text = GetRotateSpeed().ToString("0.0")
+
+        'スコア
+        L_Score.Text = GetScore().ToString("0.0")
+    End Sub
+
     Private Sub B_POS_SET_Click(sender As Object, e As EventArgs) Handles B_POS_SET.Click
         Dim pos_info As PosInfo
 
@@ -256,9 +271,8 @@ Public Class FormMain
             Exit Sub
         End If
 
-        '速度パラメータを設定
-        SetSpeed(speed)
-        SetRotateSpeed(rotate_speed)
+        'スコアを初期化
+        ResetScore()
 
         '動作開始
         SetMoving(True)
@@ -282,9 +296,8 @@ Public Class FormMain
             Exit Sub
         End If
 
-        '速度パラメータを設定
-        SetSpeed(speed)
-        SetRotateSpeed(rotate_speed)
+        'スコアを初期化
+        ResetScore()
 
         '動作開始
         SetMoving(True)

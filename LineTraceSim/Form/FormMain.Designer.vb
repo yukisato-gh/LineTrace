@@ -87,6 +87,12 @@ Partial Class FormMain
         SelectCarToolStripMenuItem = New ToolStripMenuItem()
         OnlineToolStripMenuItem_0 = New ToolStripMenuItem()
         OnlineToolStripMenuItem_1 = New ToolStripMenuItem()
+        GroupBox6 = New GroupBox()
+        L_Score = New Label()
+        Label22 = New Label()
+        Label19 = New Label()
+        L_Score_Speed = New Label()
+        L_Score_Rotate = New Label()
         CType(PB_Course, ComponentModel.ISupportInitialize).BeginInit()
         CType(PB_Car, ComponentModel.ISupportInitialize).BeginInit()
         GroupBox1.SuspendLayout()
@@ -95,6 +101,7 @@ Partial Class FormMain
         GroupBox4.SuspendLayout()
         GroupBox5.SuspendLayout()
         MenuStrip1.SuspendLayout()
+        GroupBox6.SuspendLayout()
         SuspendLayout()
         ' 
         ' PB_Course
@@ -382,7 +389,6 @@ Partial Class FormMain
         ' 
         ' L_Status_Angle
         ' 
-        L_Status_Angle.AutoSize = True
         L_Status_Angle.Location = New Point(111, 46)
         L_Status_Angle.Margin = New Padding(2, 0, 2, 0)
         L_Status_Angle.Name = "L_Status_Angle"
@@ -393,7 +399,6 @@ Partial Class FormMain
         ' 
         ' L_Status_Y
         ' 
-        L_Status_Y.AutoSize = True
         L_Status_Y.Location = New Point(59, 46)
         L_Status_Y.Margin = New Padding(2, 0, 2, 0)
         L_Status_Y.Name = "L_Status_Y"
@@ -404,7 +409,6 @@ Partial Class FormMain
         ' 
         ' L_Status_X
         ' 
-        L_Status_X.AutoSize = True
         L_Status_X.Location = New Point(11, 46)
         L_Status_X.Margin = New Padding(2, 0, 2, 0)
         L_Status_X.Name = "L_Status_X"
@@ -452,7 +456,7 @@ Partial Class FormMain
         GroupBox4.Controls.Add(B_STOP)
         GroupBox4.Controls.Add(B_GO)
         GroupBox4.Controls.Add(B_AUTO)
-        GroupBox4.Location = New Point(812, 167)
+        GroupBox4.Location = New Point(813, 244)
         GroupBox4.Margin = New Padding(2)
         GroupBox4.Name = "GroupBox4"
         GroupBox4.Padding = New Padding(2)
@@ -549,7 +553,7 @@ Partial Class FormMain
         GroupBox5.Controls.Add(Label13)
         GroupBox5.Controls.Add(Label15)
         GroupBox5.Controls.Add(Label16)
-        GroupBox5.Location = New Point(810, 251)
+        GroupBox5.Location = New Point(812, 328)
         GroupBox5.Margin = New Padding(2)
         GroupBox5.Name = "GroupBox5"
         GroupBox5.Padding = New Padding(2)
@@ -765,11 +769,79 @@ Partial Class FormMain
         OnlineToolStripMenuItem_1.Size = New Size(121, 22)
         OnlineToolStripMenuItem_1.Text = "＝Online"
         ' 
+        ' GroupBox6
+        ' 
+        GroupBox6.Controls.Add(L_Score)
+        GroupBox6.Controls.Add(Label22)
+        GroupBox6.Controls.Add(Label19)
+        GroupBox6.Controls.Add(L_Score_Speed)
+        GroupBox6.Controls.Add(L_Score_Rotate)
+        GroupBox6.Location = New Point(813, 167)
+        GroupBox6.Margin = New Padding(2)
+        GroupBox6.Name = "GroupBox6"
+        GroupBox6.Padding = New Padding(2)
+        GroupBox6.Size = New Size(273, 73)
+        GroupBox6.TabIndex = 8
+        GroupBox6.TabStop = False
+        GroupBox6.Text = "Score"
+        ' 
+        ' L_Score
+        ' 
+        L_Score.Font = New Font("Yu Gothic UI", 24F, FontStyle.Regular, GraphicsUnit.Point, CByte(128))
+        L_Score.Location = New Point(167, 18)
+        L_Score.Margin = New Padding(2, 0, 2, 0)
+        L_Score.Name = "L_Score"
+        L_Score.Size = New Size(95, 45)
+        L_Score.TabIndex = 15
+        L_Score.Text = "000.0"
+        L_Score.TextAlign = ContentAlignment.TopRight
+        ' 
+        ' Label22
+        ' 
+        Label22.AutoSize = True
+        Label22.Location = New Point(49, 45)
+        Label22.Margin = New Padding(2, 0, 2, 0)
+        Label22.Name = "Label22"
+        Label22.Size = New Size(37, 15)
+        Label22.TabIndex = 14
+        Label22.Text = "deg/s"
+        ' 
+        ' Label19
+        ' 
+        Label19.AutoSize = True
+        Label19.Location = New Point(49, 18)
+        Label19.Margin = New Padding(2, 0, 2, 0)
+        Label19.Name = "Label19"
+        Label19.Size = New Size(33, 15)
+        Label19.TabIndex = 12
+        Label19.Text = "pix/s"
+        ' 
+        ' L_Score_Speed
+        ' 
+        L_Score_Speed.Location = New Point(11, 18)
+        L_Score_Speed.Margin = New Padding(2, 0, 2, 0)
+        L_Score_Speed.Name = "L_Score_Speed"
+        L_Score_Speed.Size = New Size(34, 15)
+        L_Score_Speed.TabIndex = 7
+        L_Score_Speed.Text = "000.0"
+        L_Score_Speed.TextAlign = ContentAlignment.TopRight
+        ' 
+        ' L_Score_Rotate
+        ' 
+        L_Score_Rotate.Location = New Point(11, 45)
+        L_Score_Rotate.Margin = New Padding(2, 0, 2, 0)
+        L_Score_Rotate.Name = "L_Score_Rotate"
+        L_Score_Rotate.Size = New Size(34, 15)
+        L_Score_Rotate.TabIndex = 6
+        L_Score_Rotate.Text = "000.0"
+        L_Score_Rotate.TextAlign = ContentAlignment.TopRight
+        ' 
         ' FormMain
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1094, 641)
+        Controls.Add(GroupBox6)
         Controls.Add(GroupBox5)
         Controls.Add(GroupBox4)
         Controls.Add(GroupBox3)
@@ -796,6 +868,8 @@ Partial Class FormMain
         GroupBox5.PerformLayout()
         MenuStrip1.ResumeLayout(False)
         MenuStrip1.PerformLayout()
+        GroupBox6.ResumeLayout(False)
+        GroupBox6.PerformLayout()
         ResumeLayout(False)
         PerformLayout()
     End Sub
@@ -863,5 +937,11 @@ Partial Class FormMain
     Friend WithEvents SelectCarToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents OnlineToolStripMenuItem_0 As ToolStripMenuItem
     Friend WithEvents OnlineToolStripMenuItem_1 As ToolStripMenuItem
+    Friend WithEvents GroupBox6 As GroupBox
+    Friend WithEvents L_Score_Speed As Label
+    Friend WithEvents L_Score_Rotate As Label
+    Friend WithEvents L_Score As Label
+    Friend WithEvents Label22 As Label
+    Friend WithEvents Label19 As Label
 
 End Class

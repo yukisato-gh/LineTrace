@@ -42,9 +42,6 @@ Public Module LineTraceSim
     Public Const CAR_CENTER_X As Double = CAR_SIZE_X / 2.0
     Public Const CAR_CENTER_Y As Double = CAR_SIZE_Y / 2.0
 
-    Public Const DEFAULT_SPEED As Double = 100.0
-    Public Const DEFAULT_ROTATE_SPEED As Double = 90.0
-
     '位置情報
     Public Structure PosInfo
         Dim x As Double
@@ -94,10 +91,10 @@ Public Module LineTraceSim
     Private car_info As Bitmap
 
     '速度[pix/s]
-    Private speed As Double = DEFAULT_SPEED
+    Private speed As Double = 0
 
     '回転速度[deg/s]
-    Private rotate_speed As Double = DEFAULT_ROTATE_SPEED
+    Private rotate_speed As Double = 0
 
     '動作させるか
     Private is_moving As Boolean = False
@@ -107,6 +104,10 @@ Public Module LineTraceSim
 
     'コース位置によるオフセットY
     Private offset_y As Integer = 0
+
+    'スコア
+    Private score_count As Integer = 0
+    Private score_ok As Integer = 0
 
     '共有メモリ(センサ値)のアクセッサ
     Private sensor_accessor As MemoryMappedViewAccessor
@@ -303,4 +304,31 @@ Public Module LineTraceSim
             is_moving = value
         End SyncLock
     End Sub
+
+    Public Sub ResetScore()
+        SyncLock lock
+            score_count = 0
+            score_ok = 0
+        End SyncLock
+    End Sub
+
+    Public Sub SetScore(ByVal ok As Boolean)
+        SyncLock lock
+            score_count += 1
+            If ok Then
+                score_ok += 1
+            End If
+        End SyncLock
+    End Sub
+
+    Public Function GetScore() As Double
+        SyncLock lock
+            If score_count = 0 Then
+                GetScore = 0
+                Exit Function
+            End If
+
+            GetScore = score_ok / CDbl(score_count) * 100
+        End SyncLock
+    End Function
 End Module
