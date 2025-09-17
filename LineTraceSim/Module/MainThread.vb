@@ -1,6 +1,28 @@
 ﻿Imports System.Threading
+Imports System.Diagnostics ' Stopwatchのために必要
 
 Module MainThread
+
+    ' --- 物理パラメータ (LineTraceSim.vbなどで定義・設定することを想定) ---
+    ' 質量 (kg)
+    Private Const MASS As Double = 1.0
+    ' 慣性モーメント (kg*m^2)
+    Private Const INERTIA_MOMENT As Double = 0.1
+    ' モーターの推力 (N)
+    Private Const MOTOR_FORCE As Double = 100 '暫定
+    ' モーターによるトルク (N*m)
+    Private Const MOTOR_TORQUE As Double = 50 '暫定
+    ' 直線運動の摩擦係数
+    Private Const FRICTION_COEFFICIENT As Double = 0.8
+    ' 回転運動の摩擦係数
+    Private Const ROTATIONAL_FRICTION_COEFFICIENT As Double = 0.5
+
+    ' --- 状態変数 ---
+    ' 現在の速度 (m/s)
+    Private currentSpeed As Double = 0.0
+    ' 現在の角速度 (deg/s)
+    Private currentAngularVelocity As Double = 0.0
+
     'メインループを開始
     Public Sub StartMainLoop()
         Dim thread As New Thread(AddressOf MainLoop)
@@ -27,13 +49,15 @@ Module MainThread
         End While
     End Sub
 
-    '現在位置をシミュレーション
+    '現在位置をシミュレーション (物理ベースのロジックに更新)
     Private Sub SimulatePos()
         Static sw As New Stopwatch
 
         If IsMoving() = False Then
             '停止中
             sw.Stop()
+            currentSpeed = 0
+            currentAngularVelocity = 0
             Exit Sub
         End If
 
@@ -43,45 +67,74 @@ Module MainThread
             Exit Sub
         End If
 
-        '停止
-        sw.Stop()
+        '経過時間を計算
+        Dim elapsedSec As Double = sw.ElapsedMilliseconds / 1000.0
+        sw.Restart() ' 次のフレームのためにリスタート
 
-        Dim sec As Double = sw.ElapsedMilliseconds / 1000.0
+        If elapsedSec <= 0 Then Exit Sub '経過時間がなければ何もしない
+
         Dim before_pos As PosInfo = GetPosInfo()
         Dim pwm As Byte = GetPwmValue()
-        Dim speed As Double = GetSpeed()
-        Dim rotate_speed As Double = GetRotateSpeed()
 
-        '位置更新
-        Dim after_pos As PosInfo = before_pos
+        ' --- 1. 力とトルクの計算 ---
+        Dim thrust As Double = 0
+        Dim torque As Double = 0
+
         If (pwm = (PWM_L + PWM_R)) Then
             '直進
+            thrust = MOTOR_FORCE
+            torque = 0
         ElseIf (pwm = PWM_L) Then
             '＋回転
-            after_pos.angle = (after_pos.angle + (rotate_speed * sec)) Mod 360
+            thrust = 0 ' 回転時は直進しないと仮定
+            torque = MOTOR_TORQUE
         ElseIf (pwm = PWM_R) Then
             '－回転
-            after_pos.angle = (after_pos.angle - (rotate_speed * sec)) Mod 360
-        Else
-            '停止
-            sw.Restart()
-            Exit Sub
+            thrust = 0 ' 回転時は直進しないと仮定
+            torque = -MOTOR_TORQUE
         End If
+
+        ' --- 2. 摩擦の計算 ---
+        ' 速度に比例する抵抗を計算
+        Dim frictionForce As Double = currentSpeed * FRICTION_COEFFICIENT
+        ' 角速度に比例する抵抗を計算
+        Dim rotationalFriction As Double = currentAngularVelocity * ROTATIONAL_FRICTION_COEFFICIENT
+
+        ' --- 3. 加速度と角加速度の計算 (F=ma, τ=Iα) ---
+        Dim netForce As Double = thrust - frictionForce
+        Dim acceleration As Double = netForce / MASS
+
+        Dim netTorque As Double = torque - rotationalFriction
+        Dim angularAcceleration As Double = netTorque / INERTIA_MOMENT
+
+        ' --- 4. 速度と角速度の更新 ---
+        currentSpeed += acceleration * elapsedSec
+        currentSpeed = Math.Max(0, currentSpeed) ' 速度は負にならない
+
+        currentAngularVelocity += angularAcceleration * elapsedSec
+
+        ' --- 5. 位置と角度の更新 ---
+        Dim after_pos As PosInfo = before_pos
+
+        ' 角度更新
+        after_pos.angle = (after_pos.angle + (currentAngularVelocity * elapsedSec)) Mod 360
         If after_pos.angle < 0 Then
             after_pos.angle += 360
         End If
-        Dim distance As Double = speed * sec
+
+        ' 位置更新
+        Dim distance As Double = currentSpeed * elapsedSec
         Dim rad As Double = after_pos.angle / 180 * Math.PI
         after_pos.x -= distance * Math.Cos(rad)
+        after_pos.y -= distance * Math.Sin(rad)
+
+        ' 範囲チェック
         after_pos.x = Math.Max(after_pos.x, 0)
         after_pos.x = Math.Min(after_pos.x, COURSE_SIZE_X - 1)
-        after_pos.y -= distance * Math.Sin(rad)
         after_pos.y = Math.Max(after_pos.y, 0)
         after_pos.y = Math.Min(after_pos.y, COURSE_SIZE_Y - 1)
+        
         SetPosInfo(after_pos)
-
-        '再開
-        sw.Restart()
     End Sub
 
     'センサをシミュレーション
@@ -117,11 +170,11 @@ Module MainThread
                 For y As Integer = start_y To end_y
                     '回転後のセンサ位置を計算
                     Dim rotate_x As Integer = CInt(x * Math.Cos(rad) - y * Math.Sin(rad))
-                    rotate_x += pos_info.x
+                    rotate_x += CInt(pos_info.x)
                     rotate_x = Math.Max(rotate_x, 0)
                     rotate_x = Math.Min(rotate_x, COURSE_SIZE_X - 1)
                     Dim rotate_y As Integer = CInt(x * Math.Sin(rad) + y * Math.Cos(rad))
-                    rotate_y += pos_info.y
+                    rotate_y += CInt(pos_info.y)
                     rotate_y = Math.Max(rotate_y, 0)
                     rotate_y = Math.Min(rotate_y, COURSE_SIZE_Y - 1)
 
