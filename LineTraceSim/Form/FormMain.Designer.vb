@@ -120,7 +120,7 @@ Partial Class FormMain
         ' 
         PB_Car.BackColor = Color.White
         PB_Car.Image = CType(resources.GetObject("PB_Car.Image"), Image)
-        PB_Car.Location = New Point(337, 112)
+        PB_Car.Location = New Point(173, 480)
         PB_Car.Margin = New Padding(2)
         PB_Car.Name = "PB_Car"
         PB_Car.Size = New Size(120, 120)
