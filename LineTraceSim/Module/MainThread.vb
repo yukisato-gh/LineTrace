@@ -118,14 +118,18 @@ Module MainThread
         ' --- 5. 位置と角度の更新 ---
         Dim after_pos As PosInfo = before_pos
 
+        Dim pwm_coef_left As Double = GetPwmLeftPercent() / 100
+        Dim pwm_coef_right As Double = GetPwmRightPercent() / 100
+        Dim pwm_coef As Double = (pwm_coef_left + pwm_coef_right) / 2
+
         ' 角度更新
-        after_pos.angle = (after_pos.angle + (currentAngularVelocity * elapsedSec)) Mod 360
+        after_pos.angle = (after_pos.angle + (currentAngularVelocity * elapsedSec * pwm_coef)) Mod 360
         If after_pos.angle < 0 Then
             after_pos.angle += 360
         End If
 
         ' 位置更新
-        Dim distance As Double = currentSpeed * elapsedSec
+        Dim distance As Double = currentSpeed * elapsedSec * pwm_coef
         Dim rad As Double = after_pos.angle / 180 * Math.PI
         after_pos.x -= distance * Math.Cos(rad)
         after_pos.y -= distance * Math.Sin(rad)
@@ -244,5 +248,9 @@ Module MainThread
 
         'PWM状態を設定
         SetPwmValue(pwm)
+
+        'PWM出力を設定
+        SetPwmLeftPercent(100)
+        SetPwmRightPercent(100)
     End Sub
 End Module

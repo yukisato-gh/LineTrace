@@ -87,6 +87,10 @@ Public Class FormMain
             'PWM状態を反映
             DispPwm()
 
+            'PWM出力を反映
+            DispPwmLeft()
+            DispPwmRight()
+
             '現在位置を反映
             DispPos()
 
@@ -148,6 +152,18 @@ Public Class FormMain
         Else
             L_PWM_R.Text = TEXT_OFF
         End If
+    End Sub
+
+    'PWM出力(左)を反映
+    Private Sub DispPwmLeft()
+        Dim pwm_pct As Double = GetPwmLeftPercent()
+        L_PWM_PCT_L.Text = pwm_pct.ToString("0.0")
+    End Sub
+
+    'PWM出力(右)を反映
+    Private Sub DispPwmRight()
+        Dim pwm_pct As Double = GetPwmRightPercent()
+        L_PWM_PCT_R.Text = pwm_pct.ToString("0.0")
     End Sub
 
     '現在位置を反映

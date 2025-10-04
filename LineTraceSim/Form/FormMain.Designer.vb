@@ -93,6 +93,8 @@ Partial Class FormMain
         Label19 = New Label()
         L_Score_Speed = New Label()
         L_Score_Rotate = New Label()
+        L_PWM_PCT_L = New Label()
+        L_PWM_PCT_R = New Label()
         CType(PB_Course, ComponentModel.ISupportInitialize).BeginInit()
         CType(PB_Car, ComponentModel.ISupportInitialize).BeginInit()
         GroupBox1.SuspendLayout()
@@ -317,6 +319,8 @@ Partial Class FormMain
         ' 
         ' GroupBox2
         ' 
+        GroupBox2.Controls.Add(L_PWM_PCT_R)
+        GroupBox2.Controls.Add(L_PWM_PCT_L)
         GroupBox2.Controls.Add(L_PWM_R)
         GroupBox2.Controls.Add(Label11)
         GroupBox2.Controls.Add(L_PWM_L)
@@ -325,7 +329,7 @@ Partial Class FormMain
         GroupBox2.Margin = New Padding(2)
         GroupBox2.Name = "GroupBox2"
         GroupBox2.Padding = New Padding(2)
-        GroupBox2.Size = New Size(92, 73)
+        GroupBox2.Size = New Size(92, 100)
         GroupBox2.TabIndex = 3
         GroupBox2.TabStop = False
         GroupBox2.Text = "PWM"
@@ -382,14 +386,14 @@ Partial Class FormMain
         GroupBox3.Margin = New Padding(2)
         GroupBox3.Name = "GroupBox3"
         GroupBox3.Padding = New Padding(2)
-        GroupBox3.Size = New Size(172, 73)
+        GroupBox3.Size = New Size(172, 100)
         GroupBox3.TabIndex = 4
         GroupBox3.TabStop = False
         GroupBox3.Text = "Status"
         ' 
         ' L_Status_Angle
         ' 
-        L_Status_Angle.Location = New Point(111, 46)
+        L_Status_Angle.Location = New Point(111, 71)
         L_Status_Angle.Margin = New Padding(2, 0, 2, 0)
         L_Status_Angle.Name = "L_Status_Angle"
         L_Status_Angle.Size = New Size(34, 15)
@@ -399,7 +403,7 @@ Partial Class FormMain
         ' 
         ' L_Status_Y
         ' 
-        L_Status_Y.Location = New Point(59, 46)
+        L_Status_Y.Location = New Point(59, 71)
         L_Status_Y.Margin = New Padding(2, 0, 2, 0)
         L_Status_Y.Name = "L_Status_Y"
         L_Status_Y.Size = New Size(34, 15)
@@ -409,7 +413,7 @@ Partial Class FormMain
         ' 
         ' L_Status_X
         ' 
-        L_Status_X.Location = New Point(11, 46)
+        L_Status_X.Location = New Point(11, 71)
         L_Status_X.Margin = New Padding(2, 0, 2, 0)
         L_Status_X.Name = "L_Status_X"
         L_Status_X.Size = New Size(34, 15)
@@ -456,7 +460,7 @@ Partial Class FormMain
         GroupBox4.Controls.Add(B_STOP)
         GroupBox4.Controls.Add(B_GO)
         GroupBox4.Controls.Add(B_AUTO)
-        GroupBox4.Location = New Point(813, 244)
+        GroupBox4.Location = New Point(813, 271)
         GroupBox4.Margin = New Padding(2)
         GroupBox4.Name = "GroupBox4"
         GroupBox4.Padding = New Padding(2)
@@ -557,7 +561,7 @@ Partial Class FormMain
         GroupBox5.Controls.Add(Label13)
         GroupBox5.Controls.Add(Label15)
         GroupBox5.Controls.Add(Label16)
-        GroupBox5.Location = New Point(812, 328)
+        GroupBox5.Location = New Point(813, 355)
         GroupBox5.Margin = New Padding(2)
         GroupBox5.Name = "GroupBox5"
         GroupBox5.Padding = New Padding(2)
@@ -780,7 +784,7 @@ Partial Class FormMain
         GroupBox6.Controls.Add(Label19)
         GroupBox6.Controls.Add(L_Score_Speed)
         GroupBox6.Controls.Add(L_Score_Rotate)
-        GroupBox6.Location = New Point(813, 167)
+        GroupBox6.Location = New Point(812, 194)
         GroupBox6.Margin = New Padding(2)
         GroupBox6.Name = "GroupBox6"
         GroupBox6.Padding = New Padding(2)
@@ -839,6 +843,26 @@ Partial Class FormMain
         L_Score_Rotate.TabIndex = 6
         L_Score_Rotate.Text = "000.0"
         L_Score_Rotate.TextAlign = ContentAlignment.TopRight
+        ' 
+        ' L_PWM_PCT_L
+        ' 
+        L_PWM_PCT_L.Location = New Point(11, 71)
+        L_PWM_PCT_L.Margin = New Padding(2, 0, 2, 0)
+        L_PWM_PCT_L.Name = "L_PWM_PCT_L"
+        L_PWM_PCT_L.Size = New Size(34, 15)
+        L_PWM_PCT_L.TabIndex = 7
+        L_PWM_PCT_L.Text = "000.0"
+        L_PWM_PCT_L.TextAlign = ContentAlignment.TopRight
+        ' 
+        ' L_PWM_PCT_R
+        ' 
+        L_PWM_PCT_R.Location = New Point(50, 71)
+        L_PWM_PCT_R.Margin = New Padding(2, 0, 2, 0)
+        L_PWM_PCT_R.Name = "L_PWM_PCT_R"
+        L_PWM_PCT_R.Size = New Size(34, 15)
+        L_PWM_PCT_R.TabIndex = 8
+        L_PWM_PCT_R.Text = "000.0"
+        L_PWM_PCT_R.TextAlign = ContentAlignment.TopRight
         ' 
         ' FormMain
         ' 
@@ -947,5 +971,7 @@ Partial Class FormMain
     Friend WithEvents L_Score As Label
     Friend WithEvents Label22 As Label
     Friend WithEvents Label19 As Label
+    Friend WithEvents L_PWM_PCT_R As Label
+    Friend WithEvents L_PWM_PCT_L As Label
 
 End Class

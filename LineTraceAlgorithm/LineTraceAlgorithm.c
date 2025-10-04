@@ -4,11 +4,14 @@
 
 #define RET_HIGH    (int)1
 #define RET_LOW     (int)0
+#define PWM_MAX      65535U
 
 void AlgorithmOnline(BYTE *sensor, BYTE *pwm);
 
 volatile BYTE* sensor;
 volatile BYTE* pwm;
+volatile DOUBLE* pwm_left;
+volatile DOUBLE* pwm_right;
 
 /* メイン関数 */
 int main()
@@ -36,6 +39,30 @@ int main()
 	{
 		return 1;
 	}
+
+    /* PWM(左)出力値の共有メモリ初期化 */
+    HANDLE pwm_left_handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 1, L"PwmLeft");
+    if (pwm_left_handle == NULL)
+    {
+        return 1;
+    }
+    pwm_left = (DOUBLE *)MapViewOfFile(pwm_left_handle, FILE_MAP_ALL_ACCESS, 0, 0, 8);
+    if (pwm_left == NULL)
+    {
+        return 1;
+    }
+
+    /* PWM(右)出力値の共有メモリ初期化 */
+    HANDLE pwm_right_handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 1, L"PwmRight");
+    if (pwm_right_handle == NULL)
+    {
+        return 1;
+    }
+    pwm_right = (DOUBLE *)MapViewOfFile(pwm_right_handle, FILE_MAP_ALL_ACCESS, 0, 0, 8);
+    if (pwm_right == NULL)
+    {
+        return 1;
+    }
 
 	/* 走行アルゴリズム */
 	while (1)
@@ -115,6 +142,9 @@ void AlgorithmOnline(BYTE* sensor, BYTE* pwm)
         /* センサが反応していない場合は標識に従う */
         *pwm = reserve_pwm;
     }
+
+    *pwm_left = 100.0;
+    *pwm_right = 100.0;
 }
 
 /* GPIO入力状態取得の繋ぎ込み処理 */
@@ -150,4 +180,7 @@ void setMotorPWM(uint16_t left, uint16_t right)
     {
         *pwm = 0;
     }
+
+    *pwm_left = left / (double)PWM_MAX * 100;
+    *pwm_right = right / (double)PWM_MAX * 100;
 }

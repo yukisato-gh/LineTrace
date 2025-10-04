@@ -78,6 +78,12 @@ Public Module LineTraceSim
     'PWM
     Private pwm_value As Byte = 0
 
+    'PWM(左)の出力％
+    Private pwm_left_percent As Double = 0
+
+    'PWM(右)の出力％
+    Private pwm_right_percent As Double = 0
+
     '初期位置
     Private default_pos_info As PosInfo
 
@@ -115,6 +121,12 @@ Public Module LineTraceSim
     '共有メモリ(PWM)のアクセッサ
     Private pwm_accessor As MemoryMappedViewAccessor
 
+    '共有メモリ(PWM_PCT_L)のアクセッサ
+    Private pwm_pct_left_accessor As MemoryMappedViewAccessor
+
+    '共有メモリ(PWM_PCT_R)のアクセッサ
+    Private pwm_pct_right_accessor As MemoryMappedViewAccessor
+
     Public Function Initialize() As Boolean
         Initialize = False
 
@@ -127,6 +139,14 @@ Public Module LineTraceSim
             '共有メモリ(PWM)の初期化
             Dim pwm_mmf As MemoryMappedFile = MemoryMappedFile.CreateOrOpen("Pwm", 1)
             pwm_accessor = pwm_mmf.CreateViewAccessor()
+
+            '共有メモリ(PWM_PCT_L)の初期化
+            Dim pwm_pct_left_mmf As MemoryMappedFile = MemoryMappedFile.CreateOrOpen("PwmLeft", 8)
+            pwm_pct_left_accessor = pwm_pct_left_mmf.CreateViewAccessor()
+
+            '共有メモリ(PWM_PCT_R)の初期化
+            Dim pwm_pct_right_mmf As MemoryMappedFile = MemoryMappedFile.CreateOrOpen("PwmRight", 8)
+            pwm_pct_right_accessor = pwm_pct_right_mmf.CreateViewAccessor()
 
             Initialize = True
 
@@ -213,6 +233,58 @@ Public Module LineTraceSim
             End Try
 
             GetPwmValue = pwm_value
+        End SyncLock
+    End Function
+
+    Public Sub SetPwmLeftPercent(ByVal value As Double)
+        SyncLock lock
+            value = Math.Min(value, 100)
+            value = Math.Max(value, 0)
+            pwm_left_percent = value
+
+            Try
+                '共有メモリにも書き込み
+                pwm_pct_left_accessor.Write(0, value)
+            Catch ex As Exception
+            End Try
+        End SyncLock
+    End Sub
+
+    Public Function GetPwmLeftPercent() As Double
+        SyncLock lock
+            Try
+                '共有メモリから読み込み
+                pwm_pct_left_accessor.Read(Of Double)(0, pwm_left_percent)
+            Catch ex As Exception
+            End Try
+
+            GetPwmLeftPercent = pwm_left_percent
+        End SyncLock
+    End Function
+
+    Public Sub SetPwmRightPercent(ByVal value As Double)
+        SyncLock lock
+            value = Math.Min(value, 100)
+            value = Math.Max(value, 0)
+            pwm_right_percent = value
+
+            Try
+                '共有メモリにも書き込み
+                pwm_pct_right_accessor.Write(0, value)
+            Catch ex As Exception
+            End Try
+        End SyncLock
+    End Sub
+
+    Public Function GetPwmRightPercent() As Double
+        SyncLock lock
+            Try
+                '共有メモリから読み込み
+                pwm_pct_right_accessor.Read(Of Double)(0, pwm_right_percent)
+            Catch ex As Exception
+            End Try
+
+            GetPwmRightPercent = pwm_right_percent
         End SyncLock
     End Function
 
