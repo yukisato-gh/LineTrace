@@ -1,18 +1,18 @@
 ﻿#include <windows.h>
 #include <stdio.h>
+#include "LineTraceAlgorithm.h"
 
-#define CH(index)   (1 << index)
-#define PWM_L       (1)
-#define PWM_R       (2)
+#define RET_HIGH    (int)1
+#define RET_LOW     (int)0
 
 void AlgorithmOnline(BYTE *sensor, BYTE *pwm);
+
+volatile BYTE* sensor;
+volatile BYTE* pwm;
 
 /* メイン関数 */
 int main()
 {
-	volatile BYTE *sensor;
-	volatile BYTE *pwm;
-
 	/* センサー値の共有メモリ初期化 */
 	HANDLE sensor_handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 1, L"Sensor");
 	if (sensor_handle == NULL)
@@ -38,11 +38,16 @@ int main()
 	}
 
 	/* 走行アルゴリズム */
-	while (true)
+	while (1)
 	{
-		AlgorithmOnline((BYTE *)sensor, (BYTE *)pwm);
+#if 1
+        lineTraceControl(dt);
+        Sleep(10);
+#else
+        AlgorithmOnline((BYTE *)sensor, (BYTE *)pwm);
         printf("sensor=%d, pwm=%d\n", *sensor, *pwm);
-	}
+#endif
+    }
 
 	/* 共有メモリ解放 */
 	UnmapViewOfFile((void *)sensor);
@@ -109,5 +114,40 @@ void AlgorithmOnline(BYTE* sensor, BYTE* pwm)
     {
         /* センサが反応していない場合は標識に従う */
         *pwm = reserve_pwm;
+    }
+}
+
+/* GPIO入力状態取得の繋ぎ込み処理 */
+int gpio_get(unsigned int gpio_no)
+{
+    for (int i = 0; i < 8; i++)
+    {
+        if (gpio_no == sens[i])
+        {
+            return ((*sensor & CH(i)) == 0) ? RET_LOW : RET_HIGH;
+        }
+    }
+
+    return RET_LOW;
+}
+
+/* PWM出力状態設定の繋ぎ込み処理 */
+void setMotorPWM(uint16_t left, uint16_t right)
+{
+    if (left != 0 && right != 0)
+    {
+        *pwm = PWM_L + PWM_R;
+    }
+    else if (left != 0)
+    {
+        *pwm = PWM_L;
+    }
+    else if (right != 0)
+    {
+        *pwm = PWM_R;
+    }
+    else
+    {
+        *pwm = 0;
     }
 }

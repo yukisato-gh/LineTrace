@@ -474,6 +474,7 @@ Partial Class FormMain
         Label18.Size = New Size(37, 15)
         Label18.TabIndex = 13
         Label18.Text = "deg/s"
+        Label18.Visible = False
         ' 
         ' T_Rotate
         ' 
@@ -484,6 +485,7 @@ Partial Class FormMain
         T_Rotate.TabIndex = 12
         T_Rotate.Text = "90.0"
         T_Rotate.TextAlign = HorizontalAlignment.Right
+        T_Rotate.Visible = False
         ' 
         ' Label17
         ' 
@@ -494,6 +496,7 @@ Partial Class FormMain
         Label17.Size = New Size(33, 15)
         Label17.TabIndex = 11
         Label17.Text = "pix/s"
+        Label17.Visible = False
         ' 
         ' T_Spd
         ' 
@@ -504,6 +507,7 @@ Partial Class FormMain
         T_Spd.TabIndex = 10
         T_Spd.Text = "100.0"
         T_Spd.TextAlign = HorizontalAlignment.Right
+        T_Spd.Visible = False
         ' 
         ' B_STOP
         ' 
