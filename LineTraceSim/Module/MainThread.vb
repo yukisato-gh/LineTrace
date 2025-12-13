@@ -250,7 +250,15 @@ Module MainThread
         SetPwmValue(pwm)
 
         'PWM出力を設定
-        SetPwmLeftPercent(100)
-        SetPwmRightPercent(100)
+        If (pwm And PWM_L) = 0 Then
+            SetPwmLeftPercent(0)
+        Else
+            SetPwmLeftPercent(100)
+        End If
+        If (pwm And PWM_R) = 0 Then
+            SetPwmRightPercent(0)
+        Else
+            SetPwmRightPercent(100)
+        End If
     End Sub
 End Module

@@ -44,6 +44,8 @@ Partial Class FormMain
         Label2 = New Label()
         L_Sensor_0 = New Label()
         GroupBox2 = New GroupBox()
+        L_PWM_PCT_R = New Label()
+        L_PWM_PCT_L = New Label()
         L_PWM_R = New Label()
         Label11 = New Label()
         L_PWM_L = New Label()
@@ -93,8 +95,6 @@ Partial Class FormMain
         Label19 = New Label()
         L_Score_Speed = New Label()
         L_Score_Rotate = New Label()
-        L_PWM_PCT_L = New Label()
-        L_PWM_PCT_R = New Label()
         CType(PB_Course, ComponentModel.ISupportInitialize).BeginInit()
         CType(PB_Car, ComponentModel.ISupportInitialize).BeginInit()
         GroupBox1.SuspendLayout()
@@ -333,6 +333,26 @@ Partial Class FormMain
         GroupBox2.TabIndex = 3
         GroupBox2.TabStop = False
         GroupBox2.Text = "PWM"
+        ' 
+        ' L_PWM_PCT_R
+        ' 
+        L_PWM_PCT_R.Location = New Point(50, 71)
+        L_PWM_PCT_R.Margin = New Padding(2, 0, 2, 0)
+        L_PWM_PCT_R.Name = "L_PWM_PCT_R"
+        L_PWM_PCT_R.Size = New Size(34, 15)
+        L_PWM_PCT_R.TabIndex = 8
+        L_PWM_PCT_R.Text = "000.0"
+        L_PWM_PCT_R.TextAlign = ContentAlignment.TopRight
+        ' 
+        ' L_PWM_PCT_L
+        ' 
+        L_PWM_PCT_L.Location = New Point(11, 71)
+        L_PWM_PCT_L.Margin = New Padding(2, 0, 2, 0)
+        L_PWM_PCT_L.Name = "L_PWM_PCT_L"
+        L_PWM_PCT_L.Size = New Size(34, 15)
+        L_PWM_PCT_L.TabIndex = 7
+        L_PWM_PCT_L.Text = "000.0"
+        L_PWM_PCT_L.TextAlign = ContentAlignment.TopRight
         ' 
         ' L_PWM_R
         ' 
@@ -844,31 +864,12 @@ Partial Class FormMain
         L_Score_Rotate.Text = "000.0"
         L_Score_Rotate.TextAlign = ContentAlignment.TopRight
         ' 
-        ' L_PWM_PCT_L
-        ' 
-        L_PWM_PCT_L.Location = New Point(11, 71)
-        L_PWM_PCT_L.Margin = New Padding(2, 0, 2, 0)
-        L_PWM_PCT_L.Name = "L_PWM_PCT_L"
-        L_PWM_PCT_L.Size = New Size(34, 15)
-        L_PWM_PCT_L.TabIndex = 7
-        L_PWM_PCT_L.Text = "000.0"
-        L_PWM_PCT_L.TextAlign = ContentAlignment.TopRight
-        ' 
-        ' L_PWM_PCT_R
-        ' 
-        L_PWM_PCT_R.Location = New Point(50, 71)
-        L_PWM_PCT_R.Margin = New Padding(2, 0, 2, 0)
-        L_PWM_PCT_R.Name = "L_PWM_PCT_R"
-        L_PWM_PCT_R.Size = New Size(34, 15)
-        L_PWM_PCT_R.TabIndex = 8
-        L_PWM_PCT_R.Text = "000.0"
-        L_PWM_PCT_R.TextAlign = ContentAlignment.TopRight
-        ' 
         ' FormMain
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1094, 641)
+        Controls.Add(MenuStrip1)
         Controls.Add(GroupBox6)
         Controls.Add(GroupBox5)
         Controls.Add(GroupBox4)
@@ -877,7 +878,6 @@ Partial Class FormMain
         Controls.Add(GroupBox1)
         Controls.Add(PB_Car)
         Controls.Add(PB_Course)
-        Controls.Add(MenuStrip1)
         MainMenuStrip = MenuStrip1
         Margin = New Padding(2)
         Name = "FormMain"
