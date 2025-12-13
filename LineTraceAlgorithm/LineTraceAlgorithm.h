@@ -9,8 +9,10 @@
 #define uint16_t unsigned short
 
 extern int gpio_get(unsigned int gpio_no);
-extern void setMotorPWM(uint16_t left, uint16_t right);
+extern void setMotor(uint16_t left, uint16_t right);
+extern void sleep_ms(int time);
 
 extern const uint sens[8];
 extern const float dt;
 extern void lineTraceControl(float dt);
+extern void debug_motor(uint16_t, uint16_t);

@@ -76,19 +76,23 @@ Module MainThread
         Dim before_pos As PosInfo = GetPosInfo()
         Dim pwm As Byte = GetPwmValue()
 
+        Dim pwm_coef_left As Double = GetPwmLeftPercent() / 100
+        Dim pwm_coef_right As Double = GetPwmRightPercent() / 100
+        Dim pwm_coef As Double = (pwm_coef_left + pwm_coef_right) / 2
+
         ' --- 1. 力とトルクの計算 ---
         Dim thrust As Double = 0
         Dim torque As Double = 0
 
-        If (pwm = (PWM_L + PWM_R)) Then
+        If (pwm_coef_left = pwm_coef_right) Then
             '直進
             thrust = MOTOR_FORCE
             torque = 0
-        ElseIf (pwm = PWM_L) Then
+        ElseIf (pwm_coef_left > pwm_coef_right) Then
             '＋回転
             thrust = 0 ' 回転時は直進しないと仮定
             torque = MOTOR_TORQUE
-        ElseIf (pwm = PWM_R) Then
+        ElseIf (pwm_coef_right > pwm_coef_left) Then
             '－回転
             thrust = 0 ' 回転時は直進しないと仮定
             torque = -MOTOR_TORQUE
@@ -117,10 +121,6 @@ Module MainThread
 
         ' --- 5. 位置と角度の更新 ---
         Dim after_pos As PosInfo = before_pos
-
-        Dim pwm_coef_left As Double = GetPwmLeftPercent() / 100
-        Dim pwm_coef_right As Double = GetPwmRightPercent() / 100
-        Dim pwm_coef As Double = (pwm_coef_left + pwm_coef_right) / 2
 
         ' 角度更新
         after_pos.angle = (after_pos.angle + (currentAngularVelocity * elapsedSec * pwm_coef)) Mod 360

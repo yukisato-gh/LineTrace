@@ -4,7 +4,7 @@
 
 #define RET_HIGH    (int)1
 #define RET_LOW     (int)0
-#define PWM_MAX      65535U
+#define PWM_MAX     8192U
 
 void AlgorithmOnline(BYTE *sensor, BYTE *pwm);
 
@@ -162,7 +162,7 @@ int gpio_get(unsigned int gpio_no)
 }
 
 /* PWM出力状態設定の繋ぎ込み処理 */
-void setMotorPWM(uint16_t left, uint16_t right)
+void setMotor(uint16_t left, uint16_t right)
 {
     if (left != 0 && right != 0)
     {
@@ -183,4 +183,13 @@ void setMotorPWM(uint16_t left, uint16_t right)
 
     *pwm_left = left / (double)PWM_MAX * 100;
     *pwm_right = right / (double)PWM_MAX * 100;
+
+    //デバッグ出力用
+    debug_motor(left, right);
+}
+
+/* スリープ処理の繋ぎ込み処理 */
+void sleep_ms(int time)
+{
+    Sleep(time);
 }

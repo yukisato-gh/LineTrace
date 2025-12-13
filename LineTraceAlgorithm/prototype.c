@@ -12,24 +12,30 @@
 #endif
 
 /* GPIO番号対応付け */
-#define AIN1 21   // OUTA1, phase(正転/逆転)
-#define AIN2 20   // OUTA2, enable(PWM制御)
-#define BIN1 19   // OUTB1, phase(正転/逆転)
-#define BIN2 18   // OUTB2, enable(PWM制御)
-const uint sens[8] = {9, 8, 7, 6, 5, 4, 3, 2}; // センサIN1-IN8
+#define MOTOR_A1 21U   // Left, OUTA1, phase(正転/逆転)
+#define MOTOR_A2 20U   // Left, OUTA2, enable(PWM制御)
+#define MOTOR_B1 19U   // Right, OUTB1, phase(正転/逆転)
+#define MOTOR_B2 18U   // Right, OUTB2, enable(PWM制御)
+
+const uint sens[8] = {9U, 8U, 7U, 6U, 5U, 4U, 3U, 2U}; // センサIN1-IN8(左から順)
 
 /* モータ出力設定 */
-// PWMの最大値
-// 16bit=65535
-#define PWM_MAX      65535U
+//左出力オフセットパーセント[%]
+#define LEFT_OFFSET     0.0f
+//右出力オフセットパーセント[%]
+#define RIGHT_OFFSET    0.0f
+// PWMの最大値 16bit=65535→13bit=8192
+#define PWM_MAX         8192U
 // PWMの最小値
-#define PWM_MIN      0U
-// 直進時の基準出力をパーセントで設定
-#define BASE_SPEED_PCT   40.0f     // [%]
+#define PWM_MIN         0U
+// 直進時の基準出力をパーセント[%]で設定
+#define BASE_SPEED_PCT  50.0f
+// 最小の出力をパーセント[%]で設定
+#define MIN_SPEED_PCT   10.0f
 // 補正量の上限をパーセントで設定
-#define MAX_U_PCT        BASE_SPEED_PCT
+#define MAX_U_PCT       40.0f
 // カーブ係数%(大きいほど減速する)
-#define CURVE_COEF       0.6f
+#define CURVE_COEF      0.6f
 
 /* PIDパラメータ */
 // 比例ゲイン
@@ -42,69 +48,88 @@ const uint sens[8] = {9, 8, 7, 6, 5, 4, 3, 2}; // センサIN1-IN8
 float integral = 0.0f;
 float prev_error = 0.0f;
 // 制御周期(ms)
-const float dt = 0.01f; // 10ms
+const float dt = 0.005f; // 10ms→5ms
+const uint64_t interval_us = 5000; // 10ms→5ms周期(単位はマイクロ秒)
 
 /* センサ関連 */
 // センサ数
 #define SENSORS   8
 // センサ位置(左マイナス、右プラス)
-const float sensor_pos[SENSORS] = {-4, -3, -2, -1, 1, 2, 3, 4};
+const float sensor_pos[SENSORS] = {0, -5, -2, 0, 0, 2, 5, 0};
+
+/* 走行モード */
+typedef enum {
+    MODE_WAIT_START,
+    MODE_LINE_TRACE,
+    MODE_CORNER,
+    MODE_CROSS,
+    MODE_GOAL
+} RunMode;
+RunMode mode = MODE_WAIT_START;
+
+/* マーカー判定関連 */
+const int th_repeat = 5; // 連続検出閾値(threshold) 3回→5回
 
 /* 関数プロトタイプ宣言 */
-uint init_pwm(uint gpio); // PWM出力設定
-float calcLinePosition(void); // センサから位置を計算する
-void lineTraceControl(float dt); // 誤差修正
-void setMotorPWM(uint16_t left, uint16_t right); // モータPWM出力
-void debug_senser(); // センサデバッグ用
-void debug_motor(uint16_t left, uint16_t right); // モータデバッグ用
+void init_pwm(uint);                    // PWM出力設定
+float calcLinePosition(void);           // センサから位置を計算する
+void lineTraceControl(float);           // ライントレース制御
+void doLineTrace(float);                // PID制御にてライントレース(誤差に応じた出力調整)
+void rotateForce(int);                  // 強制転回(コーナーマーカー検出時)
+void straightForce(int);                // 強制直進(交差点検出時)
+void setMotor(uint16_t, uint16_t);      // モータ出力
+void checkMarker(void);                 // マーカー検出とモード切替
+void debug_senser(void);                // センサデバッグ用
+void debug_motor(uint16_t, uint16_t);   // モータデバッグ用
 
 #if defined(HARDWARE)
 int main() {
     stdio_init_all();
     setup_default_uart();
 
-    const uint motorA1 = AIN1; // Right
-    const uint motorA2 = AIN2; // Right
-    const uint motorB1 = BIN1; // Left
-    const uint motorB2 = BIN2; // Left
-
     // INPUT SET (Sensers)
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < SENSORS; i++) {
         gpio_init(sens[i]);
         gpio_set_dir(sens[i], GPIO_IN); // Set as input (change to GPIO_OUT if needed)
     }
 
-    // OUTPUT SET (Motors)
-    gpio_init(motorA1);
-    gpio_set_dir(motorA1, GPIO_OUT);
-    gpio_init(motorA2);
-    gpio_set_dir(motorA2, GPIO_OUT);
-    gpio_init(motorB1);
-    gpio_set_dir(motorB1, GPIO_OUT);
-    gpio_init(motorB2);
-    gpio_set_dir(motorB2, GPIO_OUT);
+    // OUTPUTセット (モーター)
+    gpio_init(MOTOR_A1);
+    gpio_set_dir(MOTOR_A1, GPIO_OUT);
+    gpio_init(MOTOR_A2);
+    gpio_set_dir(MOTOR_A2, GPIO_OUT);
+    gpio_init(MOTOR_B1);
+    gpio_set_dir(MOTOR_B1, GPIO_OUT);
+    gpio_init(MOTOR_B2);
+    gpio_set_dir(MOTOR_B2, GPIO_OUT);
 
-    // PWM SET (Motors)
-    uint slice1 = init_pwm(motorA1);
-    uint slice2 = init_pwm(motorA2);
-    uint slice3 = init_pwm(motorB1);
-    uint slice4 = init_pwm(motorB2);
+    // PWMセット (モーター)
+    init_pwm(MOTOR_A2);
+    init_pwm(MOTOR_B2);
 
-    //メインループ
+    // ハードウェアタイマーによる現在時間取得
+    absolute_time_t next_time = get_absolute_time();
+
+    //メインループ(実行時間遅延に応じた遅延を考慮)
     while (true) {
         lineTraceControl(dt);
-        sleep_ms(10);
+        next_time = delayed_by_us(next_time, interval_us);
+        sleep_until(next_time);
     }
+    //旧メインループ
+    // while (true) {
+    //     lineTraceControl(dt);
+    //     sleep_ms(10);
+    // }
 }
 
-// PWM出力設定
-uint init_pwm(uint gpio) {
-    gpio_set_function(gpio, GPIO_FUNC_PWM);
-    uint slice = pwm_gpio_to_slice_num(gpio);
-    pwm_set_wrap(slice, PWM_MAX);          // デューティ比を0-100で扱う
-    pwm_set_clkdiv(slice, 1.0f);       // PWMクロック分周
+// PWM出力設定（初期化）
+void init_pwm(uint gpio) {
+    gpio_set_function(gpio, GPIO_FUNC_PWM); // GPIOをPWM機能に切り替え
+    uint slice = pwm_gpio_to_slice_num(gpio); // GPIOが属するslice番号を取得
+    pwm_set_wrap(slice, PWM_MAX); // デューティ比をPWM_MAXで扱う(分解能)
+    pwm_set_clkdiv(slice, 0.5f);  // PWMクロック分周(分周比)
     pwm_set_enabled(slice, true);
-    return slice;
 }
 #endif
 
@@ -114,10 +139,10 @@ float calcLinePosition(void)
     float sum_value = 0.0f;
     float sum_weight = 0.0f;
 
-    for (int i = 0; i < SENSORS; i++) {
-        float v = (float)gpio_get(sens[i]);     // 各センサ値
-        sum_value  += v * sensor_pos[i]; // 位置×値
-        sum_weight += v;                 // 値の合計
+    for (int i = 1; i < (SENSORS - 1); i++) {   // 一番両端のセンサー(マーカ検出用)を除く
+        float v = gpio_get(sens[i]);            // 各センサ値
+        sum_value  += v * sensor_pos[i];        // 位置×値
+        sum_weight += v;                        // 値の合計
     }
 
     if (sum_weight == 0.0f) {
@@ -125,15 +150,60 @@ float calcLinePosition(void)
         return 0.0f;
     }
 
-    return sum_value / sum_weight; // 重心位置
+    // デバッグ用
+    debug_senser();
+
+    return sum_value / sum_weight;  // 重心位置
 }
 
-// 誤差修正
+// ライントレース制御
 void lineTraceControl(float dt)
 {
+    checkMarker();
+
+    switch (mode) {
+    case MODE_WAIT_START:
+        doLineTrace(dt);
+        //straightForce(200); // 200ms
+        break;
+
+    case MODE_LINE_TRACE:
+        // PID制御にてライントレース(誤差に応じた出力調整)
+        doLineTrace(dt);
+        break;
+
+    case MODE_CORNER:
+        // 一定時間だけ旋回
+        //rotateForce(200); // 200ms
+        doLineTrace(dt);
+        break;
+
+    case MODE_CROSS:
+        // 誤差なしの直線扱い
+        //straightForce(200); // 200ms
+        doLineTrace(dt);
+        mode = MODE_LINE_TRACE;
+        break;
+
+    case MODE_GOAL:
+        straightForce(5000); //5000ms=5s
+        setMotor(0, 0);
+        sleep_ms(5000);
+        printf("Goal reached!\n");
+        //doLineTrace(dt);
+        break;
+    
+    default: //ここに入ることはない
+        //どのモードでもない時、ライントレース動作をする
+        doLineTrace(dt);
+    }
+}
+
+// PID制御にてライントレース(マーカー非検出時)
+void doLineTrace(float dt) {
     // 誤差計算
-    float pos = calcLinePosition();     // ライン位置
-    float error = pos;                  // 目標は中央=0
+    float pos = calcLinePosition(); // ライン位置
+    float error = pos;              // 目標は中央=0
 
     // PID計算
     integral += error * dt;
@@ -151,11 +221,11 @@ void lineTraceControl(float dt)
     const float k_curve = CURVE_COEF;       // 調整パラメータ
     float base_pct = BASE_SPEED_PCT - k_curve * fabsf(error);
 
-    //if (base_pct < 20.0f) base_pct = 20.0f;  // 最低速度を確保
+    if (base_pct < 20.0f) base_pct = MIN_SPEED_PCT; // 最低速度を確保
 
     // 左右のPWMをパーセントで計算
-    float left_pct  = base_pct - u_pct;
-    float right_pct = base_pct + u_pct;
+    float left_pct  = base_pct - u_pct + LEFT_OFFSET;
+    float right_pct = base_pct + u_pct + RIGHT_OFFSET;
 
     // 0-100%にクリップ
     if (left_pct  < 0.0f)  left_pct  = 0.0f;
@@ -167,30 +237,97 @@ void lineTraceControl(float dt)
     uint16_t left_pwm  = (uint16_t)(left_pct  / 100.0f * PWM_MAX);
     uint16_t right_pwm = (uint16_t)(right_pct / 100.0f * PWM_MAX);
 
-    //モータへ出力
-    setMotorPWM(left_pwm, right_pwm);
 
-    //デバッグ出力用
-    debug_senser();
-    debug_motor(left_pwm, right_pwm);
+    // ある程度直線なら左右トップスピードで走行する
+    if (-1.5f < error && error < 1.5f) {
+        left_pwm  = PWM_MAX * (BASE_SPEED_PCT/100.0f);
+        right_pwm = PWM_MAX * (BASE_SPEED_PCT/100.0f);
+        prev_error = 0.0f;
+    }
+
+    // モータへ出力
+    setMotor(left_pwm, right_pwm);
+}
+
+// 強制転回(コーナーマーカー検出時)
+void rotateForce(int continue_time) {
+    uint16_t lr_out = PWM_MAX * (BASE_SPEED_PCT/100.0f);
+    setMotor(lr_out, lr_out);
+    
+    /*
+    sleep_ms(5);
+    float pos = calcLinePosition(); // ライン位置
+    if (pos < 0.0f) { //左に曲がっている時
+        for (int i = 0; i < continue_time; i++) {
+            setMotor(PWM_MAX * (BASE_SPEED_PCT/100.0f), 0);
+            sleep_ms(1);
+        }
+    }
+    else if (0.0f < pos) {
+        for (int i = 0; i < continue_time; i++) {
+            setMotor(0, PWM_MAX * (BASE_SPEED_PCT/100.0f));
+            sleep_ms(1);
+        }
+    }
+    */
+}
+
+// 強制直進(交差点検出時)
+void straightForce(int continue_time) {
+    uint16_t lr_out = PWM_MAX * (BASE_SPEED_PCT/100.0f);
+    setMotor(lr_out, lr_out);
+    sleep_ms(10);
 }
 
 #if defined(HARDWARE)
 // モータPWM出力
-void setMotorPWM(uint16_t left, uint16_t right)
+void setMotor(uint16_t left, uint16_t right)
 {
-    pwm_set_gpio_level(AIN1, PWM_MIN);
-    pwm_set_gpio_level(AIN2, right);
-    pwm_set_gpio_level(BIN1, PWM_MAX);
-    pwm_set_gpio_level(BIN2, left);
+    gpio_put(MOTOR_A1, false);               //正転
+    pwm_set_gpio_level(MOTOR_A2, right); //右モータPWM出力(左では無くなぜか右)
+    gpio_put(MOTOR_B1, true);               //後転(モータの向きが反転しているため)
+    pwm_set_gpio_level(MOTOR_B2, left);  //左モータPWM出力(右では無くなぜか左)
+
+    // デバッグ用
+    debug_motor(left, right);
 }
 #endif
 
+// マーカー検出とモード切替
+void checkMarker(void) {
+    int left_marker = gpio_get(sens[0]);
+    int right_marker = gpio_get(sens[SENSORS - 1]);
+
+    static int cnt_left = 0, cnt_right = 0;
+
+    if (left_marker) cnt_left++; else cnt_left = 0;
+    if (right_marker) cnt_right++; else cnt_right = 0;
+
+    if ((cnt_left >= th_repeat) && (cnt_right >= th_repeat)) {
+        mode = MODE_CROSS;
+        printf("### [MARKER] CROSS ###\n");
+    }
+    else if ((cnt_left >= th_repeat) && (cnt_right <= th_repeat)) {
+        mode = MODE_CORNER;
+        printf("### [MARKER] CORNER ###\n");
+    }
+    else if ((cnt_left <= th_repeat) && (cnt_right >= th_repeat)) {
+        if (mode == MODE_WAIT_START) {
+            mode = MODE_LINE_TRACE; // スタート開始
+            printf("### [MARKER] START ###\n");
+        } else {
+            mode = MODE_GOAL; // ゴール検出
+            printf("### [MARKER] GOAL ###\n");
+        }
+    }
+    mode = MODE_LINE_TRACE;
+}
+
 // センサデバッグ用
-void debug_senser()
+void debug_senser(void)
 {
     for (int i = 0; i < SENSORS; i++) {
-        printf("#%d=%d, ", i, gpio_get(sens[i]));     // 各センサ入力値
+        printf("#%d=%d, ", i, gpio_get(sens[i]));   // 各センサ入力値
     }
 }
 
