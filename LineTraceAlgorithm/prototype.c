@@ -16,7 +16,7 @@
 #define AIN2 20   // OUTA2, enable(PWM制御)
 #define BIN1 19   // OUTB1, phase(正転/逆転)
 #define BIN2 18   // OUTB2, enable(PWM制御)
-const uint sens[8] = {9, 8, 7, 6, 5, 4, 3, 2}; // センサIN1?IN8
+const uint sens[8] = {9, 8, 7, 6, 5, 4, 3, 2}; // センサIN1-IN8
 
 /* モータ出力設定 */
 // PWMの最大値
@@ -25,11 +25,11 @@ const uint sens[8] = {9, 8, 7, 6, 5, 4, 3, 2}; // センサIN1?IN8
 // PWMの最小値
 #define PWM_MIN      0U
 // 直進時の基準出力をパーセントで設定
-#define BASE_SPEED_PCT   50.0f     // [%]
+#define BASE_SPEED_PCT   40.0f     // [%]
 // 補正量の上限をパーセントで設定
 #define MAX_U_PCT        BASE_SPEED_PCT
 // カーブ係数%(大きいほど減速する)
-#define CURVE_COEF       0.5f
+#define CURVE_COEF       0.6f
 
 /* PIDパラメータ */
 // 比例ゲイン
@@ -102,7 +102,7 @@ uint init_pwm(uint gpio) {
     gpio_set_function(gpio, GPIO_FUNC_PWM);
     uint slice = pwm_gpio_to_slice_num(gpio);
     pwm_set_wrap(slice, PWM_MAX);          // デューティ比を0-100で扱う
-    pwm_set_clkdiv(slice, 4.0f);       // PWMクロック分周
+    pwm_set_clkdiv(slice, 1.0f);       // PWMクロック分周
     pwm_set_enabled(slice, true);
     return slice;
 }
@@ -115,7 +115,7 @@ float calcLinePosition(void)
     float sum_weight = 0.0f;
 
     for (int i = 0; i < SENSORS; i++) {
-        float v = gpio_get(sens[i]);     // 各センサ値
+        float v = (float)gpio_get(sens[i]);     // 各センサ値
         sum_value  += v * sensor_pos[i]; // 位置×値
         sum_weight += v;                 // 値の合計
     }
@@ -151,13 +151,13 @@ void lineTraceControl(float dt)
     const float k_curve = CURVE_COEF;       // 調整パラメータ
     float base_pct = BASE_SPEED_PCT - k_curve * fabsf(error);
 
-    if (base_pct < 20.0f) base_pct = 20.0f;  // 最低速度を確保
+    //if (base_pct < 20.0f) base_pct = 20.0f;  // 最低速度を確保
 
     // 左右のPWMをパーセントで計算
-    float left_pct  = BASE_SPEED_PCT - u_pct;
-    float right_pct = BASE_SPEED_PCT + u_pct;
+    float left_pct  = base_pct - u_pct;
+    float right_pct = base_pct + u_pct;
 
-    // 0?100%にクリップ
+    // 0-100%にクリップ
     if (left_pct  < 0.0f)  left_pct  = 0.0f;
     if (left_pct  > 100.0f) left_pct = 100.0f;
     if (right_pct < 0.0f)  right_pct = 0.0f;
