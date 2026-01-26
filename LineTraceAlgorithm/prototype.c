@@ -59,13 +59,14 @@ const float sensor_pos[SENSORS] = {0, -5, -2, 0, 0, 2, 5, 0};
 
 /* 走行モード */
 typedef enum {
-    MODE_WAIT_START,
+    MODE_IDLE,
+    MODE_START,
     MODE_LINE_TRACE,
     MODE_CORNER,
-    MODE_CROSS,
+    MODE_CORNERING,
     MODE_GOAL
 } RunMode;
-RunMode mode = MODE_WAIT_START;
+RunMode mode = MODE_LINE_TRACE;
 
 /* マーカー判定関連 */
 const int th_repeat = 5; // 連続検出閾値(threshold) 3回→5回
@@ -81,6 +82,9 @@ void setMotor(uint16_t, uint16_t);      // モータ出力
 void checkMarker(void);                 // マーカー検出とモード切替
 void debug_senser(void);                // センサデバッグ用
 void debug_motor(uint16_t, uint16_t);   // モータデバッグ用
+
+/* スタートフラグ */
+static int flag_start = 0;
 
 #if defined(HARDWARE)
 int main() {
@@ -162,35 +166,24 @@ void lineTraceControl(float dt)
     checkMarker();
 
     switch (mode) {
-    case MODE_WAIT_START:
-        doLineTrace(dt);
-        //straightForce(200); // 200ms
+    case MODE_IDLE:
+        setMotor(0, 0);
         break;
 
+    case MODE_START:
     case MODE_LINE_TRACE:
+    case MODE_CORNER:
+    case MODE_CORNERING:
         // PID制御にてライントレース(誤差に応じた出力調整)
         doLineTrace(dt);
         break;
 
-    case MODE_CORNER:
-        // 一定時間だけ旋回
-        //rotateForce(200); // 200ms
-        doLineTrace(dt);
-        break;
-
-    case MODE_CROSS:
-        // 誤差なしの直線扱い
-        //straightForce(200); // 200ms
-        doLineTrace(dt);
-        mode = MODE_LINE_TRACE;
-        break;
-
     case MODE_GOAL:
-        straightForce(5000); //5000ms=5s
+        sleep_ms(1000);
         setMotor(0, 0);
-        sleep_ms(5000);
         printf("Goal reached!\n");
-        //doLineTrace(dt);
+        mode = MODE_IDLE;
+        flag_start = 0;
         break;
     
     default: //ここに入ることはない
@@ -224,8 +217,8 @@ void doLineTrace(float dt) {
     if (base_pct < 20.0f) base_pct = MIN_SPEED_PCT; // 最低速度を確保
 
     // 左右のPWMをパーセントで計算
-    float left_pct  = base_pct - u_pct + LEFT_OFFSET;
-    float right_pct = base_pct + u_pct + RIGHT_OFFSET;
+    float left_pct  = base_pct + u_pct + LEFT_OFFSET;
+    float right_pct = base_pct - u_pct + RIGHT_OFFSET;
 
     // 0-100%にクリップ
     if (left_pct  < 0.0f)  left_pct  = 0.0f;
@@ -293,33 +286,159 @@ void setMotor(uint16_t left, uint16_t right)
 }
 #endif
 
-// マーカー検出とモード切替
-void checkMarker(void) {
-    int left_marker = gpio_get(sens[0]);
-    int right_marker = gpio_get(sens[SENSORS - 1]);
+// 左マーカーの検出
+int checkLeftMarker() {
+    int flag = 0;
 
-    static int cnt_left = 0, cnt_right = 0;
-
-    if (left_marker) cnt_left++; else cnt_left = 0;
-    if (right_marker) cnt_right++; else cnt_right = 0;
-
-    if ((cnt_left >= th_repeat) && (cnt_right >= th_repeat)) {
-        mode = MODE_CROSS;
-        printf("### [MARKER] CROSS ###\n");
-    }
-    else if ((cnt_left >= th_repeat) && (cnt_right <= th_repeat)) {
-        mode = MODE_CORNER;
-        printf("### [MARKER] CORNER ###\n");
-    }
-    else if ((cnt_left <= th_repeat) && (cnt_right >= th_repeat)) {
-        if (mode == MODE_WAIT_START) {
-            mode = MODE_LINE_TRACE; // スタート開始
-            printf("### [MARKER] START ###\n");
-        } else {
-            mode = MODE_GOAL; // ゴール検出
-            printf("### [MARKER] GOAL ###\n");
+    for (int i = 0; i < SENSORS; i++) {
+        if (flag == 0) {
+            if (gpio_get(sens[i]) == 1) {
+                // 反応するセンサ有り
+                flag = 1;
+            }
+            else if (mode != MODE_CORNERING) {
+                // コーナー中じゃなければ1つ目のセンサだけ確認する
+                return 0;
+            }
+            else if (i >= 1) {
+                // コーナー中は2つ目のセンサまで確認する
+                return 0;
+            }
+        }
+        else if (flag == 1) {
+            if (gpio_get(sens[i]) == 0) {
+                // 反応していないセンサ有り
+                flag = 2;
+            }
+        }
+        else {
+            if (gpio_get(sens[i]) == 1) {
+                // 反応していないセンサを挟んで反応するセンサ有り
+                return 1;
+            }
         }
     }
+
+    return 0;
+}
+
+// 右マーカーの検出
+int checkRightMarker() {
+    int flag = 0;
+
+    for (int i = SENSORS - 1; i >= 0; i--) {
+        if (flag == 0) {
+            if (gpio_get(sens[i]) == 1) {
+                // 反応するセンサ有り
+                flag = 1;
+            }
+            else {
+                return 0;
+            }
+        }
+        else if (flag == 1) {
+            if (gpio_get(sens[i]) == 0) {
+                // 反応していないセンサ有り
+                flag = 2;
+            }
+        }
+        else {
+            if (gpio_get(sens[i]) == 1) {
+                // 反応していないセンサを挟んで反応するセンサ有り
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+// センサ反応有りの検出
+int checkSensor() {
+    for (int i = 0; i < SENSORS; i++) {
+        if (gpio_get(sens[i]) == 1) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+
+// マーカー検出とモード切替
+void checkMarker(void) {
+    static int cnt_left = 0, cnt_right = 0;
+
+    if (checkLeftMarker() == 1) cnt_left++; else cnt_left = 0;
+    if (checkRightMarker() == 1) cnt_right++; else cnt_right = 0;
+
+    // 再送判定
+    if (mode == MODE_IDLE) {
+        if (checkSensor() == 0) {
+            // センサ反応無しで走行状態に戻す
+            mode = MODE_LINE_TRACE;
+            flag_start = 0;
+            printf("### [MARKER] RESTART ###\n");
+        }
+        return;
+    }
+
+    // スタート判定
+    if (flag_start == 0) {
+        if ((cnt_left <= th_repeat) && (cnt_right >= th_repeat)) {
+            mode = MODE_START; // スタート開始
+            flag_start = 1;
+            printf("### [MARKER] START ###\n");
+        }
+        return;
+    }
+
+    // スタート完了判定
+    if (mode == MODE_START) {
+        if (cnt_right == 0) {
+            mode = MODE_LINE_TRACE;
+            printf("### [MARKER] LINE TRACE ###\n");
+        }
+        return;
+    }
+
+    // ゴール判定
+    if (mode == MODE_LINE_TRACE) {
+        if ((cnt_left <= th_repeat) && (cnt_right >= th_repeat)) {
+            if (flag_start == 1) {
+                mode = MODE_GOAL; // ゴール検出
+                printf("### [MARKER] GOAL ###\n");
+                return;
+            }
+        }
+    }
+
+    // カーブ終了判定
+    if (mode == MODE_CORNERING) {
+        if ((cnt_left >= th_repeat) && (cnt_right <= th_repeat)) {
+            mode = MODE_LINE_TRACE;
+            printf("### [MARKER] CORNER END ###\n");
+        }
+        return;
+    }
+
+    // カーブ判定
+    if ((cnt_left >= th_repeat) && (cnt_right <= th_repeat)) {
+        mode = MODE_CORNER;
+        printf("### [MARKER] CORNER START ###\n");
+        return;
+    }
+
+    // カーブ中判定
+    if (mode == MODE_CORNER) {
+        if (cnt_left == 0) {
+            mode = MODE_CORNERING;
+            printf("### [MARKER] CORNERING ###\n");
+        }
+        return;
+    }
+
+    // 通常
     mode = MODE_LINE_TRACE;
 }
 
@@ -327,12 +446,12 @@ void checkMarker(void) {
 void debug_senser(void)
 {
     for (int i = 0; i < SENSORS; i++) {
-        printf("#%d=%d, ", i, gpio_get(sens[i]));   // 各センサ入力値
+        //printf("#%d=%d, ", i, gpio_get(sens[i]));   // 各センサ入力値
     }
 }
 
 // モータデバッグ用
 void debug_motor(uint16_t left, uint16_t right)
 {
-    printf("; #L=%d, #R=%d\n", left, right);    // モータPWM出力値
+    //printf("; #L=%d, #R=%d\n", left, right);    // モータPWM出力値
 }

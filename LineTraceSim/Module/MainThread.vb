@@ -212,34 +212,34 @@ Module MainThread
         Dim pwm As Byte
 
         '標識認識
-        If (sensor And CH0) Then
-            'CH0なら左側のみON
+        If (sensor And CH7) Then
+            'CH7なら左側のみON
             reserve_pwm = PWM_L
-        ElseIf (sensor And CH7) Then
-            'CH7なら右側のみON
+        ElseIf (sensor And CH0) Then
+            'CH0なら右側のみON
             reserve_pwm = PWM_R
         End If
 
         If (sensor And CH3) Or (sensor And CH4) Then
             'CH3か4なら両方ON
             pwm = PWM_L + PWM_R
-        ElseIf (sensor And CH2) Then
-            'CH2なら左側のみON
-            pwm = PWM_L
         ElseIf (sensor And CH5) Then
-            'CH5なら右側のみON
-            pwm = PWM_R
-        ElseIf (sensor And CH1) Then
-            'CH1なら左側のみON
+            'CH5なら左側のみON
             pwm = PWM_L
+        ElseIf (sensor And CH2) Then
+            'CH2なら右側のみON
+            pwm = PWM_R
         ElseIf (sensor And CH6) Then
-            'CH6なら右側のみON
-            pwm = PWM_R
-        ElseIf (sensor And CH0) Then
-            'CH0なら左側のみON
+            'CH6なら左側のみON
             pwm = PWM_L
+        ElseIf (sensor And CH1) Then
+            'CH1なら右側のみON
+            pwm = PWM_R
         ElseIf (sensor And CH7) Then
-            'CH7なら右側のみON
+            'CH7なら左側のみON
+            pwm = PWM_L
+        ElseIf (sensor And CH0) Then
+            'CH0なら右側のみON
             pwm = PWM_R
         Else
             'センサが反応していない場合は標識に従う
