@@ -42,6 +42,10 @@ Public Class FormMain
         SetDpiX(dpi_x)
         SetDpiY(dpi_y)
 
+        'デフォルトをオンラインにする
+        SetOnline(True)
+        SetOnlineMenu()
+
         'デフォルトのコース情報を設定
         Dim course As Bitmap = PB_Course.Image
         course.SetResolution(dpi_x, dpi_y)
@@ -69,6 +73,17 @@ Public Class FormMain
         m_sensor(5) = L_Sensor_5
         m_sensor(6) = L_Sensor_6
         m_sensor(7) = L_Sensor_7
+    End Sub
+
+    'オフライン／オンラインメニューの設定
+    Private Sub SetOnlineMenu()
+        If IsOnline() Then
+            OnlineToolStripMenuItem_0.Text = TEXT_ONLINE
+            OnlineToolStripMenuItem_1.Text = TEXT_OFFLINE
+        Else
+            OnlineToolStripMenuItem_0.Text = TEXT_OFFLINE
+            OnlineToolStripMenuItem_1.Text = TEXT_ONLINE
+        End If
     End Sub
 
     '定期更新タイマ
@@ -408,12 +423,6 @@ Public Class FormMain
         SetOnline(online)
 
         '表示更新
-        If online Then
-            OnlineToolStripMenuItem_0.Text = TEXT_ONLINE
-            OnlineToolStripMenuItem_1.Text = TEXT_OFFLINE
-        Else
-            OnlineToolStripMenuItem_0.Text = TEXT_OFFLINE
-            OnlineToolStripMenuItem_1.Text = TEXT_ONLINE
-        End If
+        SetOnlineMenu()
     End Sub
 End Class

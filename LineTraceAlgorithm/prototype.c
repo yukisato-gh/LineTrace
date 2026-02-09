@@ -64,12 +64,13 @@ typedef enum {
     MODE_LINE_TRACE,
     MODE_CORNER,
     MODE_CORNERING,
+    MODE_CORNER_END,
     MODE_GOAL
 } RunMode;
 RunMode mode = MODE_LINE_TRACE;
 
 /* マーカー判定関連 */
-const int th_repeat = 5; // 連続検出閾値(threshold) 3回→5回
+const int th_repeat = 1; // 連続検出閾値(threshold) 3回→5回→1回
 
 /* 関数プロトタイプ宣言 */
 void init_pwm(uint);                    // PWM出力設定
@@ -142,11 +143,62 @@ float calcLinePosition(void)
 {
     float sum_value = 0.0f;
     float sum_weight = 0.0f;
+    int marker_flag = 0;
 
-    for (int i = 1; i < (SENSORS - 1); i++) {   // 一番両端のセンサー(マーカ検出用)を除く
-        float v = gpio_get(sens[i]);            // 各センサ値
-        sum_value  += v * sensor_pos[i];        // 位置×値
-        sum_weight += v;                        // 値の合計
+    switch (mode) {
+    case MODE_START:
+        // スタート中は右側のセンサーを除く
+        for (int i = SENSORS - 1; i >= 0; i--) {
+            float v = gpio_get(sens[i]);
+            if (marker_flag == 0) {
+                if (v != 0) {
+                    // マーカー開始
+                    marker_flag = 1;
+                }
+            }
+            else if (marker_flag == 1) {
+                if (v == 0) {
+                    // マーカー終了
+                    marker_flag = 2;
+                }
+            }
+            else {
+                sum_value += v * sensor_pos[i];        // 位置×値
+                sum_weight += v;                       // 値の合計
+            }
+        }
+        break;
+
+    case MODE_CORNER:
+    case MODE_CORNER_END:
+        // コーナー中は左側のセンサーを除く
+        for (int i = 0; i < SENSORS; i++) {
+            float v = gpio_get(sens[i]);
+            if (marker_flag == 0) {
+                if (v != 0) {
+                    // マーカー開始
+                    marker_flag = 1;
+                }
+            }
+            else if (marker_flag == 1) {
+                if (v == 0) {
+                    // マーカー終了
+                    marker_flag = 2;
+                }
+            }
+            else {
+                sum_value += v * sensor_pos[i];        // 位置×値
+                sum_weight += v;                       // 値の合計
+            }
+        }
+        break;
+
+    default:
+        for (int i = 1; i < (SENSORS - 1); i++) {   // 一番両端のセンサー(マーカ検出用)を除く
+            float v = gpio_get(sens[i]);            // 各センサ値
+            sum_value += v * sensor_pos[i];        // 位置×値
+            sum_weight += v;                        // 値の合計
+        }
     }
 
     if (sum_weight == 0.0f) {
@@ -174,6 +226,7 @@ void lineTraceControl(float dt)
     case MODE_LINE_TRACE:
     case MODE_CORNER:
     case MODE_CORNERING:
+    case MODE_CORNER_END:
         // PID制御にてライントレース(誤差に応じた出力調整)
         doLineTrace(dt);
         break;
@@ -296,12 +349,12 @@ int checkLeftMarker() {
                 // 反応するセンサ有り
                 flag = 1;
             }
-            else if (mode != MODE_CORNERING) {
+            else if (mode != MODE_CORNERING && mode != MODE_CORNER_END) {
                 // コーナー中じゃなければ1つ目のセンサだけ確認する
                 return 0;
             }
-            else if (i >= 1) {
-                // コーナー中は2つ目のセンサまで確認する
+            else if (i >= 2) {
+                // コーナー中は3つ目のセンサまで確認する
                 return 0;
             }
         }
@@ -368,6 +421,7 @@ int checkSensor() {
 // マーカー検出とモード切替
 void checkMarker(void) {
     static int cnt_left = 0, cnt_right = 0;
+    static int cnt_straight = 0;
 
     if (checkLeftMarker() == 1) cnt_left++; else cnt_left = 0;
     if (checkRightMarker() == 1) cnt_right++; else cnt_right = 0;
@@ -413,10 +467,22 @@ void checkMarker(void) {
         }
     }
 
+    // カーブ終了判定中
+    if (mode == MODE_CORNER_END) {
+        if ((cnt_left <= th_repeat) && (cnt_right <= th_repeat)) {
+            cnt_straight++;
+            if (cnt_straight >= 10) {
+                mode = MODE_LINE_TRACE;
+                printf("### [MARKER] LINE TRACE ###\n");
+            }
+        }
+        return;
+    }
+
     // カーブ終了判定
     if (mode == MODE_CORNERING) {
         if ((cnt_left >= th_repeat) && (cnt_right <= th_repeat)) {
-            mode = MODE_LINE_TRACE;
+            mode = MODE_CORNER_END;
             printf("### [MARKER] CORNER END ###\n");
         }
         return;
@@ -425,6 +491,7 @@ void checkMarker(void) {
     // カーブ判定
     if ((cnt_left >= th_repeat) && (cnt_right <= th_repeat)) {
         mode = MODE_CORNER;
+        cnt_straight = 0;
         printf("### [MARKER] CORNER START ###\n");
         return;
     }
