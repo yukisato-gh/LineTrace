@@ -1,4 +1,5 @@
 //#define HARDWARE
+#define PIN_MODE    (0)
 
 #include <stdio.h>
 #include <math.h>
@@ -13,12 +14,23 @@
 #endif
 
 /* GPIOî‘çÜëŒâûïtÇØ */
+#if PIN_MODE == 0
 #define MOTOR_A1 21U   // Left, OUTA1, phase(ê≥ì]/ãtì])
 #define MOTOR_A2 20U   // Left, OUTA2, enable(PWMêßå‰)
 #define MOTOR_B1 19U   // Right, OUTB1, phase(ê≥ì]/ãtì])
 #define MOTOR_B2 18U   // Right, OUTB2, enable(PWMêßå‰)
+#elif PIN_MODE == 1
+#define MOTOR_A1 19U   // Left, OUTA1, phase(ê≥ì]/ãtì])
+#define MOTOR_A2 18U   // Left, OUTA2, enable(PWMêßå‰)
+#define MOTOR_B1 17U   // Right, OUTB1, phase(ê≥ì]/ãtì])
+#define MOTOR_B2 16U   // Right, OUTB2, enable(PWMêßå‰)
+#endif
 
+#if PIN_MODE == 0
 const uint sens[8] = {2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U}; // ÉZÉìÉTIN1-IN8(ç∂Ç©ÇÁèá)
+#elif PIN_MODE == 1
+const uint sens[8] = {15, 14, 13, 12, 11, 10, 9, 8}; // ÉZÉìÉTIN1-IN8(ç∂Ç©ÇÁèá)
+#endif
 
 #define ADC1_GPIO 27
 #define ADC2_GPIO 28
