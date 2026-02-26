@@ -7,6 +7,7 @@
 #if defined(HARDWARE)
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
+#include "hardware/adc.h"
 #else
 #include "LineTraceAlgorithm.h"
 #endif
@@ -17,7 +18,10 @@
 #define MOTOR_B1 19U   // Right, OUTB1, phase(正転/逆転)
 #define MOTOR_B2 18U   // Right, OUTB2, enable(PWM制御)
 
-const uint sens[8] = {9U, 8U, 7U, 6U, 5U, 4U, 3U, 2U}; // センサIN1-IN8(左から順)
+const uint sens[8] = {2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U}; // センサIN1-IN8(左から順)
+
+#define ADC1_GPIO 27
+#define ADC2_GPIO 28
 
 /* モータ出力設定 */
 //左出力オフセットパーセント[%]
@@ -39,7 +43,7 @@ const uint sens[8] = {9U, 8U, 7U, 6U, 5U, 4U, 3U, 2U}; // センサIN1-IN8(左から順
 
 /* PIDパラメータ */
 // 比例ゲイン
-#define KP  20.0f
+#define KP  15.0f
 // 積分ゲイン
 #define KI   0.5f
 // 微分ゲイン
@@ -55,7 +59,10 @@ const uint64_t interval_us = 5000; // 10ms→5ms周期(単位はマイクロ秒)
 // センサ数
 #define SENSORS   8
 // センサ位置(左マイナス、右プラス)
-const float sensor_pos[SENSORS] = {0, -5, -2, 0, 0, 2, 5, 0};
+float sensor_pos[SENSORS] = {0, -5, -2, 0, 0, 2, 5, 0};
+
+#define VREF 1.0f
+#define ADC_MAX 4095.0f
 
 /* 走行モード */
 typedef enum {
@@ -70,7 +77,7 @@ typedef enum {
 RunMode mode = MODE_LINE_TRACE;
 
 /* マーカー判定関連 */
-const int th_repeat = 1; // 連続検出閾値(threshold) 3回→5回→1回
+const int th_repeat = 3; // 連続検出閾値(threshold) 3回→5回→1回
 
 /* 関数プロトタイプ宣言 */
 void init_pwm(uint);                    // PWM出力設定
@@ -81,6 +88,7 @@ void rotateForce(int);                  // 強制転回(コーナーマーカー検出時)
 void straightForce(int);                // 強制直進(交差点検出時)
 void setMotor(uint16_t, uint16_t);      // モータ出力
 void checkMarker(void);                 // マーカー検出とモード切替
+void sensorWeight(void);
 void debug_senser(void);                // センサデバッグ用
 void debug_motor(uint16_t, uint16_t);   // モータデバッグ用
 
@@ -91,12 +99,18 @@ static int flag_start = 0;
 int main() {
     stdio_init_all();
     setup_default_uart();
+    adc_init();
+
 
     // INPUT SET (Sensers)
     for (int i = 0; i < SENSORS; i++) {
         gpio_init(sens[i]);
         gpio_set_dir(sens[i], GPIO_IN); // Set as input (change to GPIO_OUT if needed)
     }
+
+    // ADC SET
+    adc_gpio_init(ADC1_GPIO); // ADC1 on GP27
+    adc_gpio_init(ADC2_GPIO); // ADC2 on GP28
 
     // OUTPUTセット (モーター)
     gpio_init(MOTOR_A1);
@@ -144,6 +158,8 @@ float calcLinePosition(void)
     float sum_value = 0.0f;
     float sum_weight = 0.0f;
     int marker_flag = 0;
+
+    sensorWeight();
 
     switch (mode) {
     case MODE_START:
@@ -232,6 +248,7 @@ void lineTraceControl(float dt)
         break;
 
     case MODE_GOAL:
+        setMotor(PWM_MAX * (BASE_SPEED_PCT/100.0f), PWM_MAX * (BASE_SPEED_PCT/100.0f));
         sleep_ms(1000);
         setMotor(0, 0);
         printf("Goal reached!\n");
@@ -250,13 +267,21 @@ void doLineTrace(float dt) {
     // 誤差計算
     float pos = calcLinePosition(); // ライン位置
     float error = pos;              // 目標は中央=0
+    float kd_adjust = 1.0;          // KDゲインのモードに応じた係数
 
     // PID計算
     integral += error * dt;
     float derivative = (error - prev_error) / dt;
     prev_error = error;
 
-    float u_pct = KP * error + KI * integral + KD * derivative; // 補正量[%]
+    // KDゲインをモードに応じて調整
+    if(mode == MODE_LINE_TRACE) {
+        kd_adjust = 0.7;
+    }else{
+        kd_adjust = 1.0;
+    }
+    float u_pct = KP * error + KI * integral + (KD * kd_adjust ) * derivative;
+
 
     // 補正量を制限（±MAX_U_PCT）
     if (u_pct >  MAX_U_PCT) u_pct =  MAX_U_PCT;
@@ -282,14 +307,6 @@ void doLineTrace(float dt) {
     // PWM_MAXスケーリング＆整数化
     uint16_t left_pwm  = (uint16_t)(left_pct  / 100.0f * PWM_MAX);
     uint16_t right_pwm = (uint16_t)(right_pct / 100.0f * PWM_MAX);
-
-
-    // ある程度直線なら左右トップスピードで走行する
-    if (-1.5f < error && error < 1.5f) {
-        left_pwm  = PWM_MAX * (BASE_SPEED_PCT/100.0f);
-        right_pwm = PWM_MAX * (BASE_SPEED_PCT/100.0f);
-        prev_error = 0.0f;
-    }
 
     // モータへ出力
     setMotor(left_pwm, right_pwm);
@@ -507,6 +524,21 @@ void checkMarker(void) {
 
     // 通常
     mode = MODE_LINE_TRACE;
+}
+
+void sensorWeight(void)
+{
+#if defined(HARDWARE)
+    // Read ADC0
+    adc_select_input(1);
+    uint16_t raw1 = adc_read();
+    sensor_pos[3] = (float)raw1 * -VREF / ADC_MAX;
+
+    // Read ADC1
+    adc_select_input(2);
+    uint16_t raw2 = adc_read();
+    sensor_pos[4] = (float)raw2 * VREF / ADC_MAX;
+#endif
 }
 
 // センサデバッグ用

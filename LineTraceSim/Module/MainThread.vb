@@ -84,17 +84,15 @@ Module MainThread
         Dim thrust As Double = 0
         Dim torque As Double = 0
 
+        thrust = MOTOR_FORCE * (1 - Math.Abs(pwm_coef_left - pwm_coef_right))
         If (pwm_coef_left = pwm_coef_right) Then
             '直進
-            thrust = MOTOR_FORCE
             torque = 0
         ElseIf (pwm_coef_left > pwm_coef_right) Then
             '＋回転
-            thrust = 0 ' 回転時は直進しないと仮定
             torque = MOTOR_TORQUE
         ElseIf (pwm_coef_right > pwm_coef_left) Then
             '－回転
-            thrust = 0 ' 回転時は直進しないと仮定
             torque = -MOTOR_TORQUE
         End If
 
